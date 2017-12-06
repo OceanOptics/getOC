@@ -1,5 +1,7 @@
 # Ignored downloaded files
 *.nc
+*.zip
+*.bz2
 
 # Ignore OSX files
 .DS_Store
