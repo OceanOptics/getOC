@@ -24,7 +24,8 @@ Path to a CSV file containing the following should be provided.
     - variable type/units: string,yyyy/mm/dd HH:MM:SS (UTC),degN,degE
 
 Image within 24 hours are downloaded. (To verify)
-For OCLI only level L1 is supported (level and product arguments are ignored)
+For OCLI only level L1 is supported (level and product arguments are ignored).
+Note that you need to provide your EarthData username and assword to download OLCI.
 
 author: Nils Haentjens
 created: Nov 28, 2017
@@ -56,11 +57,12 @@ SOFTWARE.
 import csv
 import sys
 from datetime import datetime
+from getpass import getpass
 import requests
 import re
 import os
 
-__version__ = "0.2"
+__version__ = "0.2.1"
 verbose = False
 
 # Constants and query for file_search
@@ -197,6 +199,41 @@ def download(image_names):
                 if chunk:  # filter out keep-alive new chunks
                     handle.write(chunk)
 
+def login_download(image_names, username, password):
+    # Login to Earth Data and Download image
+    if image_names is None:
+        if verbose:
+            print('No image to download.')
+        return None
+
+    for i in image_names:
+        url = URL_GET_FILE + i
+        if os.path.isfile(i):
+            if verbose:
+                print('Skip ' + i)
+        else:
+            # Open session
+            with requests.Session() as s:
+                # Login to EarthData
+                s.auth = (username, password)
+                r1 = s.request('get', url)
+                r = s.get(r1.url, auth=(username, password), stream=True)
+                if r.ok:
+                    if verbose:
+                        print('Downloading ' + i)
+                    # Download data
+                    handle = open(i, "wb")
+                    for chunk in r.iter_content(chunk_size=512):
+                        if chunk:  # filter out keep-alive new chunks
+                            handle.write(chunk)
+                else:
+                    print('Unable to login to EarthData.\n'
+                          '\t- Did you accept the End User License Agreement for this dataset ?\n'
+                          '\t- A typo in the username or password ?')
+                    return None
+
+# image_names = ['S3A_OL_1_ERR____20171118T193838_20171118T202254_20171119T234331_2656_024_313______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171124T202355_20171124T210810_20171126T003934_2655_025_014______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171120T202724_20171120T211139_20171122T014330_2655_024_342______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171121T200117_20171121T204532_20171123T010654_2655_024_356______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171125T195748_20171125T204202_20171127T000012_2654_025_028______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171117T200445_20171117T204900_20171119T002156_2655_024_299______LN1_O_NT_002.zip']
+# login_download(image_names, 'nhtjs', 'P6a-4L2-sWK-kkh')
 
 if __name__ == "__main__":
     from optparse import OptionParser
@@ -205,6 +242,7 @@ if __name__ == "__main__":
     parser.add_option("-i", "--instrument", action="store", dest="instrument", help="specify instrument, available options are: VIIRS, MODIS-Aqua, and OLCI")
     parser.add_option("-l", "--level", action="store", dest="level", default='L2', help="specify processing level, available options are: L1A, and L2")
     parser.add_option("-p", "--product", action="store", dest="product", default='OC', help="specify product identifier, available options are: OC, SST, and IOP")
+    parser.add_option("-u", "--username", action="store", dest="username", default=None, help="specify username to login to EarthData (only for OLCI)")
     parser.add_option("-q", "--quiet", action="store_false", dest="verbose", default=True)
     (options, args) = parser.parse_args()
 
@@ -223,6 +261,10 @@ if __name__ == "__main__":
         print('getOC.py: error: too many arguments')
         sys.exit(-1)
 
-    image_names = get_image_list(args[0], options.instrument, options.level, options.product)
-    if image_names is not None:
-        download(image_names)
+
+    if options.username is not None:
+        password = getpass(prompt='EarthData Password: ', stream=None)
+        login_download(get_image_list(args[0], options.instrument, options.level, options.product),
+                       options.username, password)
+    else:
+        download(get_image_list(args[0], options.instrument, options.level, options.product))
