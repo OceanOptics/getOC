@@ -104,9 +104,12 @@ DATA_TYPE_ID = {'SeaWiFS': 'LAC', 'MODIS-Aqua': 'LAC', 'MODIS-Terra': 'LAC', 'OC
 #                    'Level 3 SMI': 'L3m', 'Ancillary': 'MET', 'Miscellaneous': 'misc'}
 SEARCH_API_LEVEL = {'All': 'all', 'L0': 'L0', 'L1': 'L1', 'L2': 'L2', 'L3BIN': 'L3b',
                     'L3SMI': 'L3m', 'Ancillary': 'MET', 'Miscellaneous': 'misc'}
-SEARCH_API_MISSION = {'All Missions': 'all', 'Aquarius': 'aquarius', 'SeaWiFS': 'seawifs', 'MODIS-Aqua': 'aqua',
-                      'MODIS-Terra': 'terra', 'MERIS': 'meris', 'OCTS': 'octs', 'CZCS': 'czcs', 'HICO': 'hico',
-                      'VIIRS': 'viirs'}
+# SEARCH_API_MISSION = {'All Missions': 'all', 'Aquarius': 'aquarius', 'SeaWiFS': 'seawifs', 'MODIS-Aqua': 'aqua',
+#                       'MODIS-Terra': 'terra', 'MERIS': 'meris', 'OCTS': 'octs', 'CZCS': 'czcs', 'HICO': 'hico',
+#                       'VIIRS': 'viirs'} # DEPRECATED
+SEARCH_API_SENSOR = {'All Missions': 'all', 'Aquarius': 'Aquarius', 'SeaWiFS': 'SeaWiFS', 'MODIS-Aqua': 'MODIS Aqua',
+                     'MODIS-Terra': 'MODIS Terra', 'MERIS': 'MERIS', 'OCTS': 'OCTS', 'CZCS': 'CZSZ', 'HICO': 'HICO',
+                     'VIIRS': 'VIIRS', 'OLCI': 'S3OLCI'}
 EXTENSION_L1A = {'MODIS-Aqua': '', 'VIIRS': '.nc'}
 
 
@@ -281,16 +284,34 @@ def get_image_list_from_search_api(instrument, start_period, end_period, binning
     dt_start = datetime.strptime(start_period, '%Y%m%d')
     dt_end = datetime.strptime(end_period, '%Y%m%d')
 
+    # VIIRS Special treatment
+    if instrument == 'VIIRS':
+        geophysical_parameter = DATA_TYPE_ID[instrument] + '_' + geophysical_parameter
+
     # Request OBPG API (might take a long time for server to answer so extend timeout)
-    r = requests.post(URL_SEARCH_API,
-                      {'instrument': SEARCH_API_MISSION[instrument],  # instrument or sensor fields seems to work
+    # Order of fields is very important !
+    r = requests.post(URL_SEARCH_API, data=
+    {'search': '',  # Search specific file
                        'sdate': dt_start.strftime('%Y-%m-%d'), 'edate': dt_end.strftime('%Y-%m-%d'),
-                       'dtype': SEARCH_API_LEVEL[level],  # Data type (Level)
-                       'subType': 1,  # Subscription type Non-Extracted
-                       'std_only': 1,  # Only search for standard processed files
-                       'results_as_file': 1}, timeout=120)
-    # 'subID': '',   # Subscription ID
+     'dtype': SEARCH_API_LEVEL[level],  # Data type (Level)
+     'sensor': SEARCH_API_SENSOR[instrument],
+     'subID': '',  # Subscription ID
+     'subType': 1,  # Subscription type Non-Extracted
+     'std_only': 1,  # Only search for standard processed files
+     'results_as_file': 1}, timeout=120,  # stream=True,
+                      headers={'accept': 'text/plain, text/html',
+                               'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.117 Safari/537.36'}
+                      )
     # 'addurl': 1,   # Add url prefix at the beginning of each filename
+    # field sensor used to be switchable by instrument however instrument returns incomplete files in some cases.
+
+    # Answer can be big so stream answer from API back
+    # buffer = ''
+    # for chunk in r.iter_content(chunk_size=512):
+    #     if chunk:
+    #         buffer += chunk.decode(r.encoding, 'replace')
+    # print(r.text)
+    # print(len(r.text))
 
     # Filter out answer with regex
     regex = re.compile(INSTRUMENT_FILE_ID[instrument] + '.*?\.' + SEARCH_API_LEVEL[level] + '_' +
@@ -311,7 +332,10 @@ def get_image_list_from_search_api(instrument, start_period, end_period, binning
 # verbose = True
 # print(get_image_list_from_search_api('MODIS-Aqua', '20170101', '20180115',
 #                                      binning_period='8D', geophysical_parameter='CHL_chlor_a_4km', level='L3SMI'))
-
+# print(get_image_list_from_search_api('MODIS-Aqua', '20110101', '20111231', write_image_list=False,
+#                                      binning_period='8D', geophysical_parameter='GSM_chl_gsm_9km', level='L3SMI'))
+# print(get_image_list_from_search_api('VIIRS', '20170101', '20171231', write_image_list=False,
+#                                      binning_period='8D', geophysical_parameter='GSM_bbp_443_gsm_9km', level='L3SMI'))
 
 def download(image_names):
     # Download all images provided in list
