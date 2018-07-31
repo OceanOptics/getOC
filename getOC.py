@@ -447,7 +447,7 @@ if __name__ == "__main__":
         # download(get_image_list_from_direct_access(options.instrument, options.start_period, options.end_period,
         #                                            options.binning_period, options.geophysical_parameter))
         download(get_image_list_from_search_api(options.instrument, options.start_period, options.end_period,
-                                                options.binning_period, options.geophysical_parameter))
+                                                options.binning_period, options.geophysical_parameter, options.level))
     else:
         # Download for Level 1 and 2 requires a list of images to download generated from the filename
         if options.username is not None:
