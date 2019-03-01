@@ -2,76 +2,12 @@
 """
 Bulk download Ocean Color images.
 
-  python -m getOC -i <instrument> -l <level> -p <product> <filename>
-  python getOC.py -i <instrument> -l <level> -p <product> <filename>
-  python getOC.py -i <instrument> -l L3BIN -s yyyymmdd -e yyyymmdd -b <binning-period> -g <geophysical-parameter>
+MIT License
 
-  python getOC.py -i VIIRS -s 20111201 -e 20180423 -b MO -g GSM -l L3BIN
-  python getOC.py -i MODIS-Aqua -s 20020101 -e 20180423 -b MO -g GSM -l L3BIN
-  python getOC.py -i MODIS-Aqua -s 20020101 -e 20180423 -b 8D -g GSM_chl_gsm_9km -l L3SMI
-  python getOC.py -i SeaWiFS -s 19970101 -e 20101231 -b MO -g GSM_chl_gsm_9km -l L3SMI
-
-instruments supported are:
-    - VIIRS
-    - MODIS-Aqua
-    - OLCI
-    - SeaWiFS (L3 only)
-
-level of processing supported are:
-    - GEO
-    - L1A
-    - L2    [default]
-    - L3BIN
-    - L3SMI
-
-L2 specific product supported are:
-    - OC    [default]
-    - IOP
-    - SST   (only MODIS)
-
-L3BIN and L3SMI specific options are:
-    - start of period <str> yyyymmdd
-    - end of period   <str> yyyymmdd
-    - binning period DAY, 8D, MO, and YR
-    - geophysical parameters supported by L3BIN are:
-        - CHL, GSM, IOP, KD490, PAR, PIC, POC, QAA, RRS, and ZLEE
-        - MODIS also accept SST, SST4, and NSST
-    - example of geophysical parameters supported by L3SMI are:
-        - CHL_chl_ocx_4km, CHL_chlor_a_4km, GSM_bbp_443_gsm_9km, GSM_chl_gsm_9km, IOP_bb_678_giop_9km, KD490_Kd_490_9km
-
-Path to a CSV file should be provided for GEO, L1A, and L2. Fields in the CSV file are has follow (ex: test.csv).
-    - variable name: id,date&time,latitude,longitude
-    - variable type/units: string,yyyy/mm/dd HH:MM:SS (UTC),degN,degE
-
-For GEO, L1A, and L2 Image within 24 hours are downloaded. (To verify)
-For OCLI only level L1 is supported (level and product arguments are ignored).
-Note that you need to provide your EarthData username and password to download OLCI.
+Copyright (c) 2019 Nils Haentjens
 
 author: Nils Haentjens
 created: Nov 28, 2017
-
-MIT License
-
-Copyright (c) [year] [fullname]
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
 """
 
 import csv
@@ -82,8 +18,9 @@ import requests
 import re
 import os
 from time import sleep
+from pandas import DataFrame, read_csv
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 verbose = False
 
 # Set constants
@@ -113,109 +50,111 @@ SEARCH_API_SENSOR = {'All Missions': 'all', 'Aquarius': 'Aquarius', 'SeaWiFS': '
 EXTENSION_L1A = {'MODIS-Aqua': '', 'VIIRS': '.nc'}
 
 
-def get_image_list_from_l12browser(filename, instrument, level='L2', product='OC'):
+def get_image_list_from_l12browser(pois, instrument, level='L2', product='OC', query_delay=1):
     # Get image name for each line of csv file provided
     #   support only L0, L1A, GEO, and L2
     #   filter by date and location
     #
-    # CSV File should be formated as follow:
+    # Get image name for each row of the panda data frame `pois`. `pois` must be formated as follow:
     #   variable name: id, date&time, latitude, longitude
     #   variable type/units: string, yyyy/mm/dd HH:MM:SS (UTC), degN, degE
+    #
+    # Not output as:
+    #   `pois` data frame is altered by this function, a column `image_names` is added and completed.
 
     image_names = list()
-    with open(filename) as fid:
-        # Get parameters to build query
-        if instrument in INSTRUMENT_FILE_ID.keys():
-            if instrument == 'OLCI':
-                sen = '&typ=' + INSTRUMENT_QUERY_ID[instrument]
-                sen_pre = INSTRUMENT_FILE_ID[instrument]
-                sen_pos = '.zip'
+    # Get parameters to build query
+    if instrument in INSTRUMENT_FILE_ID.keys():
+        if instrument == 'OLCI':
+            sen = '&typ=' + INSTRUMENT_QUERY_ID[instrument]
+            sen_pre = INSTRUMENT_FILE_ID[instrument]
+            sen_pos = '.zip'
+            dnm = 'D'
+            prm = 'TC'
+            sub = 'level1or2list'
+        else:
+            sen = '&sen=' + INSTRUMENT_QUERY_ID[instrument]
+            sen_pre = INSTRUMENT_FILE_ID[instrument]
+            if level == 'L2':
+                # Level 2, need to specify product, adjust day|night
+                sen_pos = level + '_' + DATA_TYPE_ID[instrument] + '_' + product + '.nc'
+                if product in ['OC', 'IOP']:
+                    dnm = 'D'
+                    prm = 'CHL'
+                elif product in ['SST']:
+                    dnm = 'D@N'
+                    prm = 'SST'
+                else:
+                    if verbose:
+                        print('product not supported.')
+                    return None
+                sub = 'level1or2list'
+            elif level in ['L0', 'L1A']:
+                # Level 1A specify daily data only
+                sen_pos = level + '_' + DATA_TYPE_ID[instrument] + EXTENSION_L1A[instrument]
+                dnm = 'D'
+                prm = 'TC'
+                sub = 'level1or2list'
+            # elif level == 'L3':
+            # sub = 'level3'
+            elif level in ['GEO']:
+                sen_pos = 'GEO-M' + '_' + DATA_TYPE_ID[instrument] + '.nc'
                 dnm = 'D'
                 prm = 'TC'
                 sub = 'level1or2list'
             else:
-                sen = '&sen=' + INSTRUMENT_QUERY_ID[instrument]
-                sen_pre = INSTRUMENT_FILE_ID[instrument]
-                if level == 'L2':
-                    # Level 2, need to specify product, adjust day|night
-                    sen_pos = level + '_' + DATA_TYPE_ID[instrument] + '_' + product + '.nc'
-                    if product in ['OC', 'IOP']:
-                        dnm = 'D'
-                        prm = 'CHL'
-                    elif product in ['SST']:
-                        dnm = 'D@N'
-                        prm = 'SST'
-                    else:
-                        if verbose:
-                            print('product not supported.')
-                        return None
-                    sub = 'level1or2list'
-                elif level in ['L0', 'L1A']:
-                    # Level 1A specify daily data only
-                    sen_pos = level + '_' + DATA_TYPE_ID[instrument] + EXTENSION_L1A[instrument]
-                    dnm = 'D'
-                    prm = 'TC'
-                    sub = 'level1or2list'
-                # elif level == 'L3':
-                # sub = 'level3'
-                elif level in ['GEO']:
-                    sen_pos = 'GEO-M' + '_' + DATA_TYPE_ID[instrument] + '.nc'
-                    dnm = 'D'
-                    prm = 'TC'
-                    sub = 'level1or2list'
-                else:
-                    raise ValueError("level not supported: '" + level + "'")
+                raise ValueError("level not supported: '" + level + "'")
+    else:
+        raise ValueError("instrument not supported:'" + instrument + "'")
+
+    # Add column to points of interest data frame
+    pois['image_names'] = [[] for _ in range(len(pois))]
+
+    for i, poi in pois.iterrows():
+        if verbose:
+            print('[' + str(i + 1) + '/' + str(len(pois)) + '] Querying ' + str(poi['id']) + '    ' +
+                  str(poi['dt']) + '    ' + "%.5f" % poi['lat'] + '  ' + "%.5f" % poi['lon'])
+        # Build Query
+        # Add some room in the given location (need to make it stronger if >180 | <-180)
+        n, s = str(poi['lat'] + 1), str(poi['lat'] - 1)
+        w, e = str(poi['lon'] - 2), str(poi['lon'] + 2)
+        day = str((poi['dt'] - datetime(1970, 1, 1)).days)
+        query = URL_L12BROWSER + '?sub=' + sub + sen + '&per=DAY&day=' + day + \
+                '&n=' + n + '&s=' + s + '&w=' + w + '&e=' + e + '&dnm=' + dnm + '&prm=' + prm
+        # Query API
+        r = requests.get(query)
+        if instrument == 'OLCI':
+            # Parse html
+            regex = re.compile(sen_pre + '(.*?)' + sen_pos)
+            image_names.extend(list(set(regex.findall(r.text))))
         else:
-            raise ValueError("instrument not supported:'" + instrument + "'")
-
-        # For each line in csv file
-        for l in csv.reader(fid, delimiter=','):
-            lid, dt, lat, lon = l[0], datetime.strptime(l[1], '%Y/%m/%d %H:%M:%S'), float(l[2]), float(l[3])
-            if verbose:
-                print('Querying ' + lid + ' ' + str(dt) + ' ' + str(lat) + ' ' + str(lon))
-            # Build Query
-            # Add some room in the given location (need to make it stronger if >180 | <-180)
-            n, s = str(lat + 1), str(lat - 1)
-            w, e = str(lon - 2), str(lon + 2)
-            day = str((dt - datetime(1970, 1, 1)).days)
-            query = URL_L12BROWSER + '?sub=' + sub + sen + '&per=DAY&day=' + day + '&n=' + n + '&s=' + s + '&w=' + w + '&e=' + e + '&dnm=' + dnm + '&prm=' + prm
-            # Query API
-            r = requests.get(query)
-            if instrument == 'OLCI':
-                # Parse html
-                regex = re.compile(sen_pre + '(.*?)' + sen_pos)
-                image_names.extend(list(set(regex.findall(r.text))))
+            # Parse html
+            regex = re.compile('filenamelist&id=(\d+\.\d+)')
+            filenamelist_id = regex.findall(r.text)
+            if not filenamelist_id:
+                # Case one image
+                regex = re.compile(sen_pre + '\d+\.' + sen_pos)
+                pois.at[i, 'image_names'] = list(set(regex.findall(r.text)))  # Get unique id
             else:
-                # Parse html
-                regex = re.compile('filenamelist&id=(\d+\.\d+)')
-                filenamelist_id = regex.findall(r.text)
-                if not filenamelist_id:
-                    # Case one image
-                    regex = re.compile(sen_pre + '\d+\.' + sen_pos)
-                    image_names.extend(list(set(regex.findall(r.text))))  # Get unique id
-                else:
-                    # Case multiple images
-                    r = requests.get(URL_L12BROWSER + '?sub=filenamelist&id=' + filenamelist_id[0] + '&prm=' + prm)
-                    for foo in r.text.splitlines():
-                        image_names.append(foo)
+                # Case multiple images
+                r = requests.get(URL_L12BROWSER + '?sub=filenamelist&id=' + filenamelist_id[0] + '&prm=' + prm)
+                pois.at[i, 'image_names'] = r.text.splitlines()
+        # Delay next query (might get kicked by server otherwise)
+        sleep(query_delay)
 
-        # Reformat list (specific things)
+        # Reformat filenames
         if level == 'L2' and product == 'IOP':
-            image_names = [image_name.replace('OC', 'IOP') for image_name in image_names]
+            pois.at[i, 'image_names'] = [image_name.replace('OC', 'IOP') for image_name in pois.at[i, 'image_names']]
         elif instrument == 'MODIS-Aqua' and level == 'L1A':
-            image_names = [image_name + '.bz2' for image_name in image_names]
+            pois.at[i, 'image_names'] = [image_name + '.bz2' for image_name in pois.at[i, 'image_names']]
         elif instrument == 'OLCI':
-            image_names = [sen_pre + image_name + sen_pos for image_name in image_names]
+            pois.at[i, 'image_names'] = [sen_pre + image_name + sen_pos for image_name in pois.at[i, 'image_names']]
         elif level == 'GEO':
-            image_names = [image_name.replace('L1A', 'GEO-M') for image_name in image_names]
-        return list(set(image_names))
-    if verbose:
-        print('unable to open file.')
-    return None
+            pois.at[i, 'image_names'] = [image_name.replace('L1A', 'GEO-M') for image_name in pois.at[i, 'image_names']]
 
 
 def get_image_list_from_direct_access(instrument, start_period, end_period, binning_period='8D',
-                                      geophysical_parameter='GSM_chl_gsm_9km', level='L3SMI', write_image_list=True):
+                                      geophysical_parameter='GSM_chl_gsm_9km', level='L3SMI'):
     # Generate list of images to download from dates and list of filename available at URL_DIRECTACCESS
     #   should support all levels but only tested for L3b
     # reliable but slow
@@ -260,12 +199,6 @@ def get_image_list_from_direct_access(instrument, start_period, end_period, binn
             binning_period + '_' + geophysical_parameter + '\.nc')
         image_names.extend(list(set(regex.findall(r.text))))
 
-    if write_image_list:
-        with open(instrument + '_' + start_period + '-' + end_period + '_' +
-                  level + '_' + binning_period + '_' + geophysical_parameter + '.csv', 'w') as f:
-            for i in image_names:
-                f.write("%s\n" % i)
-
     return image_names
 
 
@@ -276,10 +209,9 @@ def get_image_list_from_direct_access(instrument, start_period, end_period, binn
 
 
 def get_image_list_from_search_api(instrument, start_period, end_period, binning_period='8D',
-                                   geophysical_parameter='GSM_chl_gsm_9km', level='L3SMI', write_image_list=True):
-    # Generate list of images to download from dates and list of filename available at URL_DIRECTACCESS
-    #   should support all levels but only tested for L3b
-    # reliable bu slow
+                                   geophysical_parameter='GSM_chl_gsm_9km', level='L3SMI'):
+    # USE Search API: simple post request and receive list of files
+    #   => Fast
 
     dt_start = datetime.strptime(start_period, '%Y%m%d')
     dt_end = datetime.strptime(end_period, '%Y%m%d')
@@ -300,7 +232,9 @@ def get_image_list_from_search_api(instrument, start_period, end_period, binning
      'std_only': 1,  # Only search for standard processed files
      'results_as_file': 1}, timeout=120,  # stream=True,
                       headers={'accept': 'text/plain, text/html',
-                               'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.117 Safari/537.36'}
+                               'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4)'
+                                             ' AppleWebKit/537.36 (KHTML, like Gecko)'
+                                             ' Chrome/66.0.3359.117 Safari/537.36'}
                       )
     # 'addurl': 1,   # Add url prefix at the beginning of each filename
     # field sensor used to be switchable by instrument however instrument returns incomplete files in some cases.
@@ -318,13 +252,6 @@ def get_image_list_from_search_api(instrument, start_period, end_period, binning
                        binning_period + '_' + geophysical_parameter + '\.nc')
     image_names = sorted(list(set(regex.findall(r.text))))
 
-    # Write list
-    if write_image_list:
-        with open(instrument + '_' + start_period + '-' + end_period + '_' +
-                  level + '_' + binning_period + '_' + geophysical_parameter + '.csv', 'w') as f:
-            for i in image_names:
-                f.write("%s\n" % i)
-
     return image_names
 
 
@@ -337,6 +264,7 @@ def get_image_list_from_search_api(instrument, start_period, end_period, binning
 # print(get_image_list_from_search_api('VIIRS', '20170101', '20171231', write_image_list=False,
 #                                      binning_period='8D', geophysical_parameter='GSM_bbp_443_gsm_9km', level='L3SMI'))
 
+
 def download(image_names):
     # Download all images provided in list
     if image_names is None:
@@ -344,15 +272,15 @@ def download(image_names):
             print('No image to download.')
         return None
 
-    for i in image_names:
-        if os.path.isfile(i):
+    for i, image_name in enumerate(image_names):
+        if os.path.isfile(image_name):
             if verbose:
-                print('Skip ' + i)
+                print('[' + str(i + 1) + '/' + str(len(image_names)) + '] Skip ' + image_name)
         else:
             if verbose:
-                print('Downloading ' + i)
-            response = requests.get(URL_GET_FILE + i, stream=True)
-            handle = open(i, "wb")
+                print('[' + str(i + 1) + '/' + str(len(image_names)) + '] Downloading ' + image_name)
+            response = requests.get(URL_GET_FILE + image_name, stream=True)
+            handle = open(image_name, "wb")
             for chunk in response.iter_content(chunk_size=512):
                 if chunk:  # filter out keep-alive new chunks
                     handle.write(chunk)
@@ -393,7 +321,7 @@ def login_download(image_names, username, password):
 
 
 # image_names = ['S3A_OL_1_ERR____20171118T193838_20171118T202254_20171119T234331_2656_024_313______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171124T202355_20171124T210810_20171126T003934_2655_025_014______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171120T202724_20171120T211139_20171122T014330_2655_024_342______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171121T200117_20171121T204532_20171123T010654_2655_024_356______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171125T195748_20171125T204202_20171127T000012_2654_025_028______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171117T200445_20171117T204900_20171119T002156_2655_024_299______LN1_O_NT_002.zip']
-# login_download(image_names, 'nhtjs', 'P6a-4L2-sWK-kkh')
+# login_download(image_names, '<username>', '<password>')
 
 
 if __name__ == "__main__":
@@ -407,6 +335,8 @@ if __name__ == "__main__":
     # Level 2 specific option
     parser.add_option("-p", "--product", action="store", dest="product", default='OC',
                       help="specify product identifier (only for L2), available options are: OC, SST, and IOP")
+    parser.add_option("-d", "--delay", action="store", dest="query_delay", type='float', default=1,
+                      help="Delay between queries to find GEO, L1, and L2 data to download")
     # Level 3 specific options
     parser.add_option("-s", "--start-period", action="store", dest="start_period",
                       help="specify start period date (only for L3), yyyymmdd")
@@ -424,6 +354,9 @@ if __name__ == "__main__":
     # OLCI specific options
     parser.add_option("-u", "--username", action="store", dest="username", default=None,
                       help="specify username to login to EarthData (only for OLCI)")
+    # Other options
+    parser.add_option("-w", "--write-image-links", action="store_true", dest="write_image_links", default=False,
+                      help="Write links found during queries in csv file.")
     parser.add_option("-q", "--quiet", action="store_false", dest="verbose", default=True)
     (options, args) = parser.parse_args()
 
@@ -441,18 +374,51 @@ if __name__ == "__main__":
         print(parser.usage)
         print('getOC.py: error: too many arguments')
         sys.exit(-1)
+    elif options.instrument == 'OLCI' and options.username is None:
+        print(parser.usage)
+        print('getOC.py: error: OLCI requires to input a EarthData username (-u <username>)')
+        sys.exit(-1)
 
     if options.level in ['L3BIN', 'L3SMI']:
         # Download Level 3 based on start and end date
-        # download(get_image_list_from_direct_access(options.instrument, options.start_period, options.end_period,
-        #                                            options.binning_period, options.geophysical_parameter))
-        download(get_image_list_from_search_api(options.instrument, options.start_period, options.end_period,
-                                                options.binning_period, options.geophysical_parameter, options.level))
+
+        # Get list of images (based on start and end dates)
+        # image_list = get_image_list_from_direct_access(options.instrument, options.start_period, options.end_period,
+        #                                                options.binning_period, options.geophysical_parameter)
+        #                                                # deprecated method
+        image_names = get_image_list_from_search_api(options.instrument, options.start_period, options.end_period,
+                                                     options.binning_period, options.geophysical_parameter,
+                                                     options.level)
+        # Write list of images
+        if options.write_image_links:
+            with open(options.instrument + '_' + options.start_period + '-' + options.end_period + '_' +
+                      options.level + '_' + options.binning_period + '_' + options.geophysical_parameter +
+                      '.csv', 'w') as f:
+                for image_name in image_names:
+                    f.write("%s\n" % image_name)
+        # Download images
+        download(image_names)
     else:
+        # Parse csv file containing points of interest
+        points_of_interest = read_csv(args[0], names=['id', 'dt', 'lat', 'lon'], parse_dates=[1])
+        # Get list of images to download
+        get_image_list_from_l12browser(points_of_interest, options.instrument, options.level,
+                                       options.product, options.query_delay)
+        # Synthetize image names in one list
+        image_names = list()
+        for _, poi in points_of_interest.iterrows():
+            image_names.extend(poi['image_names'])
+        # Write image names
+        if options.write_image_links:
+            # Reformat image names
+            for i, poi in points_of_interest.iterrows():
+                points_of_interest.at[i, 'image_names'] = ';'.join(poi['image_names'])
+            points_of_interest.to_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
+                                      options.level + '_' + options.product + '.csv',
+                                      date_format='%Y/%m/%d %H:%M:%S', header=False, index=False, float_format='%.5f')
         # Download for Level 1 and 2 requires a list of images to download generated from the filename
         if options.username is not None:
             password = getpass(prompt='EarthData Password: ', stream=None)
-            login_download(get_image_list_from_l12browser(args[0], options.instrument, options.level, options.product),
-                           options.username, password)
+            login_download(image_names, options.username, password)
         else:
-            download(get_image_list_from_l12browser(args[0], options.instrument, options.level, options.product))
+            download(image_names)
