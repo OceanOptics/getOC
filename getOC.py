@@ -31,10 +31,10 @@ URL_GET_FILE = 'https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/'
 
 # Documentation of Ocean Color Data Format Specification
 #   https://oceancolor.gsfc.nasa.gov/products/
-INSTRUMENT_FILE_ID = {'SeaWiFS': 'S', 'MODIS-Aqua': 'A', 'TerraMODIS': 'T', 'OCTS': 'O', 'CZCS': 'C',
+INSTRUMENT_FILE_ID = {'SeaWiFS': 'S', 'MODIS-Aqua': 'A', 'MODIS-Terra': 'T', 'OCTS': 'O', 'CZCS': 'C',
                       'MERIS': 'M', 'VIIRS': 'V', 'HICO': 'H', 'OLCI': 'S3A_OL_1_ERR'}
-INSTRUMENT_QUERY_ID = {'SeaWiFS': 'MLAC', 'MODIS-Aqua': 'am', 'TerraMODIS': 'tm', 'OCTS': 'oc', 'CZCS': 'cz',
-                       'MERIS': 'RR', 'VIIRS': 'v0', 'HICO': 'hi', 'OLCI': 'ERR'}
+INSTRUMENT_QUERY_ID = {'SeaWiFS': 'MLAC', 'MODIS-Aqua': 'amod', 'MODIS-Terra': 'tmod', 'OCTS': 'oc', 'CZCS': 'cz',
+                       'MERIS': 'RR', 'VIIRS': 'vrsn', 'HICO': 'hi', 'OLCI': 'ERR'}
 DATA_TYPE_ID = {'SeaWiFS': 'LAC', 'MODIS-Aqua': 'LAC', 'MODIS-Terra': 'LAC', 'OCTS': 'LAC', 'CZCS': '',
                 'MERIS': 'RR', 'VIIRS': 'SNPP', 'HICO': 'ISS', 'OLCI': 'ERR'}
 # SEARCH_API_LEVEL = {'All Types': 'all', 'Level 0': 'L0', 'Level 1': 'L1', 'Level 2': 'L2', 'Level 3 Bin': 'L3b',
@@ -47,7 +47,7 @@ SEARCH_API_LEVEL = {'All': 'all', 'L0': 'L0', 'L1': 'L1', 'L2': 'L2', 'L3BIN': '
 SEARCH_API_SENSOR = {'All Missions': 'all', 'Aquarius': 'Aquarius', 'SeaWiFS': 'SeaWiFS', 'MODIS-Aqua': 'MODIS Aqua',
                      'MODIS-Terra': 'MODIS Terra', 'MERIS': 'MERIS', 'OCTS': 'OCTS', 'CZCS': 'CZSZ', 'HICO': 'HICO',
                      'VIIRS': 'VIIRS', 'OLCI': 'S3OLCI'}
-EXTENSION_L1A = {'MODIS-Aqua': '', 'VIIRS': '.nc'}
+EXTENSION_L1A = {'MODIS-Aqua': '','MODIS-Terra': '', 'VIIRS': '.nc'}
 
 
 def get_image_list_from_l12browser(pois, instrument, level='L2', product='OC', query_delay=1):
