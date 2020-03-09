@@ -365,6 +365,12 @@ if __name__ == "__main__":
         print(parser.usage)
         print('getOC.py: error: option -i, --instrument is required')
         sys.exit(-1)
+    if options.username is None:
+        print(parser.usage)
+        print('getOC.py: error: option -u, --username is required')
+        sys.exit(-1)
+    else:
+        password = getpass(prompt='EarthData Password: ', stream=None)
 
     if len(args) < 1 and options.level not in ['L3BIN', 'L3SMI']:
         print(parser.usage)
@@ -418,7 +424,7 @@ if __name__ == "__main__":
                                       date_format='%Y/%m/%d %H:%M:%S', header=False, index=False, float_format='%.5f')
         # Download for Level 1 and 2 requires a list of images to download generated from the filename
         if options.username is not None:
-            password = getpass(prompt='EarthData Password: ', stream=None)
             login_download(image_names, options.username, password)
         else:
+            print('download without login is deprecated and might not work.')
             download(image_names)
