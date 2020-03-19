@@ -152,6 +152,12 @@ def get_image_list_from_l12browser(pois, instrument, level='L2', product='OC', q
         elif level == 'GEO':
             pois.at[i, 'image_names'] = [image_name.replace('L1A', 'GEO-M') for image_name in pois.at[i, 'image_names']]
 
+    if (instrument == 'VIIRS' and level == 'L1A'):
+        df1 = pois.copy()
+        for i in range(len(df1)):
+            df1.at[i, 'image_names'] = [df1.at[i, 'image_names'].replace('L1A', 'GEO-M') for df1.at[i, 'image_names'] in df1.at[i, 'image_names']]
+        pois = pois.append(df1)
+
 
 def get_image_list_from_direct_access(instrument, start_period, end_period, binning_period='8D',
                                       geophysical_parameter='GSM_chl_gsm_9km', level='L3SMI'):
