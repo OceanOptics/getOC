@@ -420,20 +420,20 @@ if __name__ == "__main__":
             pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
                                       options.level + '_' + options.product + '.csv',
                                       names=['id', 'dt', 'lat', 'lon', 'image_names'], parse_dates=[1])
+            pois.dropna(axis=0, inplace= True)
             points_of_interest = pois.copy()
             # Parse image_names
             image_names = list()
             for index, record in pois.iterrows():
                 # Convert 'stringified' list to list
-                img_list = eval(record['image_names'])
-                # Add to final list
-                image_names.extend(img_list)
+                imli = record['image_names'].split(';')
+                for im in range(len(imli)):
+                    image_names.append(imli[im])
         else:
             # Parse csv file containing points of interest
             points_of_interest = read_csv(args[0], names=['id', 'dt', 'lat', 'lon'], parse_dates=[1])
             pois = get_image_list_from_l12browser(points_of_interest, options.instrument, options.level,
                                            options.product, options.query_delay)
-            #print(pois)
             points_of_interest = pois.copy()
             # parse image_names
             image_names = list()
