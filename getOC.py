@@ -153,10 +153,12 @@ def get_image_list_from_l12browser(pois, instrument, level='L2', product='OC', q
             pois.at[i, 'image_names'] = [image_name.replace('L1A', 'GEO-M') for image_name in pois.at[i, 'image_names']]
 
     if (instrument == 'VIIRS' and level == 'L1A'):
-        df1 = pois.copy()
-        for i in range(len(df1)):
-            df1.at[i, 'image_names'] = [df1.at[i, 'image_names'].replace('L1A', 'GEO-M') for df1.at[i, 'image_names'] in df1.at[i, 'image_names']]
-        pois = pois.append(df1)
+        geo_names = pois.copy()
+        for i in range(len(geo_names)):
+            geo_names.at[i, 'image_names'] = [geo_names.at[i, 'image_names'].replace('L1A', 'GEO-M') for geo_names.at[i, 'image_names'] in geo_names.at[i, 'image_names']]
+        pois = pois.append(geo_names)
+
+    return pois
 
 
 def get_image_list_from_direct_access(instrument, start_period, end_period, binning_period='8D',
@@ -363,6 +365,8 @@ if __name__ == "__main__":
     # Other options
     parser.add_option("-w", "--write-image-links", action="store_true", dest="write_image_links", default=False,
                       help="Write links found during queries in csv file.")
+    parser.add_option("-r", "--read-image-list", action="store_true", dest="read_image_list", default=False,
+                      help="Read previous query")
     parser.add_option("-q", "--quiet", action="store_false", dest="verbose", default=True)
     (options, args) = parser.parse_args()
 
@@ -411,20 +415,36 @@ if __name__ == "__main__":
         # Download images
         download(image_names)
     else:
-        # Parse csv file containing points of interest
-        points_of_interest = read_csv(args[0], names=['id', 'dt', 'lat', 'lon'], parse_dates=[1])
         # Get list of images to download
-        get_image_list_from_l12browser(points_of_interest, options.instrument, options.level,
-                                       options.product, options.query_delay)
-        # Synthetize image names in one list
-        image_names = list()
-        for _, poi in points_of_interest.iterrows():
-            image_names.extend(poi['image_names'])
+        if options.read_image_list:
+            pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
+                                      options.level + '_' + options.product + '.csv',
+                                      names=['id', 'dt', 'lat', 'lon', 'image_names'], parse_dates=[1])
+            points_of_interest = pois.copy()
+            # Parse image_names
+            image_names = list()
+            for index, record in pois.iterrows():
+                # Convert 'stringified' list to list
+                img_list = eval(record['image_names'])
+                # Add to final list
+                image_names.extend(img_list)
+        else:
+            # Parse csv file containing points of interest
+            points_of_interest = read_csv(args[0], names=['id', 'dt', 'lat', 'lon'], parse_dates=[1])
+            pois = get_image_list_from_l12browser(points_of_interest, options.instrument, options.level,
+                                           options.product, options.query_delay)
+            #print(pois)
+            points_of_interest = pois.copy()
+            # parse image_names
+            image_names = list()
+            for _, pois in pois.iterrows():
+                image_names.extend(pois['image_names'])
+
         # Write image names
         if options.write_image_links:
             # Reformat image names
-            for i, poi in points_of_interest.iterrows():
-                points_of_interest.at[i, 'image_names'] = ';'.join(poi['image_names'])
+            #for i in range(len(image_names)):
+            #    pois.at[i, 'image_names'] = ';'.join(pois['image_names'])
             points_of_interest.to_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
                                       options.level + '_' + options.product + '.csv',
                                       date_format='%Y/%m/%d %H:%M:%S', header=False, index=False, float_format='%.5f')
