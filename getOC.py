@@ -420,6 +420,7 @@ if __name__ == "__main__":
             pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
                                       options.level + '_' + options.product + '.csv',
                                       names=['id', 'dt', 'lat', 'lon', 'image_names'], parse_dates=[1])
+            #pois.image_names.replace('[]', np.nan, inplace=True)
             pois.dropna(axis=0, inplace= True)
             points_of_interest = pois.copy()
             # Parse image_names
@@ -443,8 +444,8 @@ if __name__ == "__main__":
         # Write image names
         if options.write_image_links:
             # Reformat image names
-            #for i in range(len(image_names)):
-            #    pois.at[i, 'image_names'] = ';'.join(pois['image_names'])
+            for i, poi in points_of_interest.iterrows():
+                points_of_interest.at[i, 'image_names'] = ';'.join(poi['image_names'])
             points_of_interest.to_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
                                       options.level + '_' + options.product + '.csv',
                                       date_format='%Y/%m/%d %H:%M:%S', header=False, index=False, float_format='%.5f')
