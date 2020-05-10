@@ -19,6 +19,7 @@ import re
 import os
 from time import sleep
 from pandas import DataFrame, read_csv
+import socket
 
 __version__ = "0.4.0"
 verbose = False
@@ -307,26 +308,69 @@ def login_download(image_names, username, password):
             if verbose:
                 print('Skip ' + i)
         else:
-            # Open session
-            with requests.Session() as s:
-                # Login to EarthData
-                s.auth = (username, password)
-                r1 = s.request('get', url)
-                r = s.get(r1.url, auth=(username, password), stream=True)
-                if r.ok:
-                    if verbose:
-                        print('Downloading ' + i)
-                    # Download data
-                    handle = open(i, "wb")
-                    for chunk in r.iter_content(chunk_size=512):
-                        if chunk:  # filter out keep-alive new chunks
-                            handle.write(chunk)
-                else:
-                    print('Unable to login to EarthData.\n'
-                          '\t- Did you accept the End User License Agreement for this dataset ?\n'
-                          '\t- A typo in the username or password ?')
-                    return None
+            MAX_RETRIES = 3
+            WAIT_SECONDS = 30
+            for j in range(MAX_RETRIES):
+                try:
+                    # Open session
+                    with requests.Session() as s:
+                        # Login to EarthData
+                        s.auth = (username, password)
+                        r1 = s.request('get', url)
+                        r = s.get(r1.url, auth=(username, password), stream=True, timeout=30)
+                        if r.ok:
+                            if verbose:
+                                print('Downloading ' + i)
+                            # Download data
+                            handle = open(i, "wb")
+                            for chunk in r.iter_content(chunk_size=512):
+                                if chunk:
+                                    handle.write(chunk)
+                            handle.close()
+                            break
+                        else:
+                            print('Unable to login to EarthData.\n'
+                              '\t- Did you accept the End User License Agreement for this dataset ?\n'
+                              '\t- A typo in the username or password ?\n'
+                              '\t- Invalid image name?')
+                            return None
+                except requests.exceptions.ConnectionError:
+                    print('Build https connection failed, download failed, reconnection ...')
+                    handle.close()
+                except requests.exceptions.ReadTimeout:
+                    print('Read time out, download failed, reconnection ...')
+                    handle.close()
+                except socket.timeout:
+                    print('Connetion lost: download failed, reconnection ...')
+                    handle.close()
+                sleep(WAIT_SECONDS)
+            else:
+                print('%d connection attempts failed, download aborted.\n'
+                    '\t- Check login/username.\n'
+                    '\t- Check for connection problems: https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?tid=6447\n'
+                    '\t- Check for blocked IP emailing: connection_problems@oceancolor.gsfc.nasa.gov\n'  % MAX_RETRIES)
+                return None
 
+############# DEPRECATED bug at midnight #############
+#            # Open session
+#            with requests.Session() as s:
+#                # Login to EarthData
+#                s.auth = (username, password)
+#                r1 = s.request('get', url)
+#                r = s.get(r1.url, auth=(username, password), stream=True)
+#                if r.ok:
+#                    if verbose:
+#                        print('Downloading ' + i)
+#                    # Download data
+#                    handle = open(i, "wb")
+#                    for chunk in r.iter_content(chunk_size=512):
+#                        if chunk:  # filter out keep-alive new chunks
+#                            handle.write(chunk)
+#                else:
+#                    print('Unable to login to EarthData.\n'
+#                          '\t- Did you accept the End User License Agreement for this dataset ?\n'
+#                          '\t- A typo in the username or password ?')
+#                    return None
 
 # image_names = ['S3A_OL_1_ERR____20171118T193838_20171118T202254_20171119T234331_2656_024_313______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171124T202355_20171124T210810_20171126T003934_2655_025_014______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171120T202724_20171120T211139_20171122T014330_2655_024_342______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171121T200117_20171121T204532_20171123T010654_2655_024_356______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171125T195748_20171125T204202_20171127T000012_2654_025_028______LN1_O_NT_002.zip', 'S3A_OL_1_ERR____20171117T200445_20171117T204900_20171119T002156_2655_024_299______LN1_O_NT_002.zip']
 # login_download(image_names, '<username>', '<password>')
@@ -417,19 +461,27 @@ if __name__ == "__main__":
     else:
         # Get list of images to download
         if options.read_image_list:
-            pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                                      options.level + '_' + options.product + '.csv',
-                                      names=['id', 'dt', 'lat', 'lon', 'image_names'], parse_dates=[1])
-            #pois.image_names.replace('[]', np.nan, inplace=True)
-            pois.dropna(axis=0, inplace= True)
-            points_of_interest = pois.copy()
-            # Parse image_names
-            image_names = list()
-            for index, record in pois.iterrows():
-                # Convert 'stringified' list to list
-                imli = record['image_names'].split(';')
-                for im in range(len(imli)):
-                    image_names.append(imli[im])
+            if os.path.isfile(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
+                                      options.level + '_' + options.product + '.csv'):
+                pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
+                                          options.level + '_' + options.product + '.csv',
+                                          names=['id', 'dt', 'lat', 'lon', 'image_names'], parse_dates=[1])
+                #pois.image_names.replace('[]', np.nan, inplace=True)
+                pois.dropna(axis=0, inplace= True)
+                #print(pois)
+                points_of_interest = pois.copy()
+                # Parse image_names
+                image_names = list()
+                for index, record in pois.iterrows():
+                    # Convert 'stringified' list to list
+                    imli = record['image_names'].split(';')
+                    for im in range(len(imli)):
+                        image_names.append(imli[im])
+            else:
+                if verbose:
+                    print('IOError: [Errno 2] File ' + os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
+                                      options.level + '_' + options.product + '.csv' + ' does not exist')
+                sys.exit(0)
         else:
             # Parse csv file containing points of interest
             points_of_interest = read_csv(args[0], names=['id', 'dt', 'lat', 'lon'], parse_dates=[1])
