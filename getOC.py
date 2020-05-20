@@ -35,7 +35,7 @@ URL_GET_FILE = 'https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/'
 INSTRUMENT_FILE_ID = {'SeaWiFS': 'S', 'MODIS-Aqua': 'A', 'MODIS-Terra': 'T', 'OCTS': 'O', 'CZCS': 'C',
                       'MERIS': 'M', 'VIIRS': 'V', 'HICO': 'H', 'OLCI': 'S3A_OL_1_ERR'}
 INSTRUMENT_QUERY_ID = {'SeaWiFS': 'MLAC', 'MODIS-Aqua': 'amod', 'MODIS-Terra': 'tmod', 'OCTS': 'oc', 'CZCS': 'cz',
-                       'MERIS': 'RR', 'VIIRS': 'vrsn', 'HICO': 'hi', 'OLCI': 'ERR'}
+                       'MERIS': 'RR', 'VIIRS': 'vrsn', 'HICO': 'hi', 'OLCI': 's3br@s3ar'} # ERR
 DATA_TYPE_ID = {'SeaWiFS': 'LAC', 'MODIS-Aqua': 'LAC', 'MODIS-Terra': 'LAC', 'OCTS': 'LAC', 'CZCS': '',
                 'MERIS': 'RR', 'VIIRS': 'SNPP', 'HICO': 'ISS', 'OLCI': 'ERR'}
 # SEARCH_API_LEVEL = {'All Types': 'all', 'Level 0': 'L0', 'Level 1': 'L1', 'Level 2': 'L2', 'Level 3 Bin': 'L3b',
