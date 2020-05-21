@@ -33,7 +33,7 @@ URL_GET_FILE = 'https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/'
 # Documentation of Ocean Color Data Format Specification
 #   https://oceancolor.gsfc.nasa.gov/products/
 INSTRUMENT_FILE_ID = {'SeaWiFS': 'S', 'MODIS-Aqua': 'A', 'MODIS-Terra': 'T', 'OCTS': 'O', 'CZCS': 'C',
-                      'MERIS': 'M', 'VIIRS': 'V', 'HICO': 'H', 'OLCI': 'S3A_OL_1_ERR'}
+                      'MERIS': 'M', 'VIIRS': 'V', 'HICO': 'H', 'OLCI': 'S3'}
 INSTRUMENT_QUERY_ID = {'SeaWiFS': 'MLAC', 'MODIS-Aqua': 'amod', 'MODIS-Terra': 'tmod', 'OCTS': 'oc', 'CZCS': 'cz',
                        'MERIS': 'RR', 'VIIRS': 'vrsn', 'HICO': 'hi', 'OLCI': 's3br@s3ar'} # ERR
 DATA_TYPE_ID = {'SeaWiFS': 'LAC', 'MODIS-Aqua': 'LAC', 'MODIS-Terra': 'LAC', 'OCTS': 'LAC', 'CZCS': '',
@@ -67,7 +67,7 @@ def get_image_list_from_l12browser(pois, instrument, level='L2', product='OC', q
     # Get parameters to build query
     if instrument in INSTRUMENT_FILE_ID.keys():
         if instrument == 'OLCI':
-            sen = '&typ=' + INSTRUMENT_QUERY_ID[instrument]
+            sen = '&sen=' + INSTRUMENT_QUERY_ID[instrument]
             sen_pre = INSTRUMENT_FILE_ID[instrument]
             sen_pos = '.zip'
             dnm = 'D'
@@ -122,12 +122,13 @@ def get_image_list_from_l12browser(pois, instrument, level='L2', product='OC', q
         day = str((poi['dt'] - datetime(1970, 1, 1)).days)
         query = URL_L12BROWSER + '?sub=' + sub + sen + '&per=DAY&day=' + day + \
                 '&n=' + n + '&s=' + s + '&w=' + w + '&e=' + e + '&dnm=' + dnm + '&prm=' + prm
+        print(query)
         # Query API
         r = requests.get(query)
         if instrument == 'OLCI':
             # Parse html
-            regex = re.compile(sen_pre + '(.*?)' + sen_pos)
-            image_names.extend(list(set(regex.findall(r.text))))
+            regex = re.compile('>S3' + '(.*?)' + sen_pos)
+            pois.at[i, 'image_names'] = list(set(regex.findall(r.text)))  # Get unique id
         else:
             # Parse html
             regex = re.compile('filenamelist&id=(\d+\.\d+)')
