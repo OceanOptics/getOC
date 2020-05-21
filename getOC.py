@@ -122,7 +122,6 @@ def get_image_list_from_l12browser(pois, instrument, level='L2', product='OC', q
         day = str((poi['dt'] - datetime(1970, 1, 1)).days)
         query = URL_L12BROWSER + '?sub=' + sub + sen + '&per=DAY&day=' + day + \
                 '&n=' + n + '&s=' + s + '&w=' + w + '&e=' + e + '&dnm=' + dnm + '&prm=' + prm
-        print(query)
         # Query API
         r = requests.get(query)
         if instrument == 'OLCI':
