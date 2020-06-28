@@ -127,7 +127,7 @@ def get_image_list_from_l12browser(pois, instrument, level='L2', product='OC', q
         else:
             w = str(poi['lon'] - 2)
         if poi['lon'] > 178:
-            e = str(poi['lon'] + 2 + 360)
+            e = str(poi['lon'] + 2 - 360)
         else:
             e = str(poi['lon'] + 2)
         day = str((poi['dt'] - datetime(1970, 1, 1)).days)
