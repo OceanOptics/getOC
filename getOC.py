@@ -228,8 +228,6 @@ def get_image_list_creodias(pois, access_platform, username, password, query_str
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
     pois['prod_entity'] = [[] for _ in range(len(pois))] # only for copernicus, to check online status & metadata
-    # get login key to include it into url
-    login_key = get_login_key(username, password)
 
     for i, poi in pois.iterrows():
         if verbose:
@@ -248,7 +246,7 @@ def get_image_list_creodias(pois, access_platform, username, password, query_str
 
         # populate lists with image name and url
         pois.at[i, 'image_names'] = [sub.replace('.SAFE', '') + '.zip' for sub in imlistraw]
-        pois.at[i, 'url'] = [URL_CREODIAS_GET_FILE + '/' + s + '?token=' + login_key for s in fid_list]
+        pois.at[i, 'url'] = [URL_CREODIAS_GET_FILE + '/' + s + '?token=' for s in fid_list]
 
     return pois
 
@@ -332,6 +330,9 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
         if verbose:
             print('No image to download.')
         return None
+    if access_platform == 'creodias':
+        # get login key to include it into url
+        login_key = get_login_key(username, password)
     for i in range(len(url_dwld)):
         if os.path.isfile(image_names[i]):
             if verbose:
@@ -346,11 +347,19 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                     # Open session
                     with requests.Session() as s:
                         # Login and download by chunk
-                        if access_platform == 'copernicus' or access_platform == 'creodias':
+                        if access_platform == 'copernicus':
                             r = s.get(url_dwld[i], auth=(username, password), stream=True, timeout=30, headers=headers)
-                            if access_platform == 'copernicus' and r.status_code != 200:
+                            if r.status_code != 200:
                                 print('Skip ' + image_names[i] + ': product offline')
                                 break
+                        elif access_platform == 'creodias':
+                            r = s.get(url_dwld[i] + login_key, stream=True, timeout=30, headers=headers)
+                            if r.status_code != 200:
+                                if r.text == 'Expired signature!':
+                                    print('Expired signature! Login again')
+                                    # get login key to include it into url
+                                    login_key = get_login_key(username, password)
+                                    r = s.get(url_dwld[i] + login_key, stream=True, timeout=30, headers=headers)
                         else:
                             s.auth = (username, password)
                             r1 = s.request('get', url_dwld[i])
@@ -373,7 +382,7 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                                     print('Unable to download from https://scihub.copernicus.eu/\n'
                                       '\t- Check login/username\n'
                                       '\t- Invalid image name?')
-                            elif instrument == 'MSI':
+                            elif access_platform == 'creodias':
                                 print('Unable to download from https://auth.creodias.eu/\n'
                                   '\t- Check login/username\n'
                                   '\t- Invalid image name?')
