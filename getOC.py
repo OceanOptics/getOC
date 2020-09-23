@@ -350,8 +350,15 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                         if access_platform == 'copernicus':
                             r = s.get(url_dwld[i], auth=(username, password), stream=True, timeout=30, headers=headers)
                             if r.status_code != 200:
-                                print('Skip ' + image_names[i] + ': product offline')
-                                break
+                                if 'offline products retrieval quota exceeded' in r.text:
+                                    print('Unable to download from https://scihub.copernicus.eu/\n'
+                                      '\t- User offline products retrieval quota exceeded (1 fetch max)')
+                                    break
+                                else:
+                                    print('Unable to download from https://scihub.copernicus.eu/\n'
+                                      '\t- Check login/username\n'
+                                      '\t- Invalid image name?')
+                                    return None
                         elif access_platform == 'creodias':
                             r = s.get(url_dwld[i] + login_key, stream=True, timeout=30, headers=headers)
                             if r.status_code != 200:
@@ -360,6 +367,11 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                                     # get login key to include it into url
                                     login_key = get_login_key(username, password)
                                     r = s.get(url_dwld[i] + login_key, stream=True, timeout=30, headers=headers)
+                                else:
+                                    print('Unable to download from https://auth.creodias.eu/\n'
+                                      '\t- Check login/username\n'
+                                      '\t- Invalid image name?')
+                                return None
                         else:
                             s.auth = (username, password)
                             r1 = s.request('get', url_dwld[i])
@@ -374,23 +386,10 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                             handle.close()
                             break
                         else:
-                            if instrument == 'OLCI' or instrument == 'SLSTR' or instrument == 'MSI':
-                                if 'offline products retrieval quota exceeded' in r.text:
-                                    print('Unable to download from https://scihub.copernicus.eu/\n'
-                                      '\t- User offline products retrieval quota exceeded (1 fetch max)')
-                                else:
-                                    print('Unable to download from https://scihub.copernicus.eu/\n'
-                                      '\t- Check login/username\n'
-                                      '\t- Invalid image name?')
-                            elif access_platform == 'creodias':
-                                print('Unable to download from https://auth.creodias.eu/\n'
-                                  '\t- Check login/username\n'
-                                  '\t- Invalid image name?')
-                            else:
-                                print('Unable to download from EarthData.\n'
-                                  '\t- Did you accept the End User License Agreement for this dataset ?\n'
-                                  '\t- Check login/username\n'
-                                  '\t- Invalid image name?')
+                            print('Unable to download from EarthData.\n'
+                              '\t- Did you accept the End User License Agreement for this dataset ?\n'
+                              '\t- Check login/username\n'
+                              '\t- Invalid image name?')
                             return None
                 except requests.exceptions.ConnectionError:
                     print('Build https connection failed: download failed, reconnection ...')
