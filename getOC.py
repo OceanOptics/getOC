@@ -363,7 +363,7 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                             r = s.get(url_dwld[i] + login_key, stream=True, timeout=30, headers=headers)
                             if r.status_code != 200:
                                 if r.text == 'Expired signature!':
-                                    print('Expired signature! Login again')
+                                    print('Login expired, reconnection ...')
                                     # get login key to include it into url
                                     login_key = get_login_key(username, password)
                                     r = s.get(url_dwld[i] + login_key, stream=True, timeout=30, headers=headers)
@@ -371,7 +371,7 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                                     print('Unable to download from https://auth.creodias.eu/\n'
                                       '\t- Check login/username\n'
                                       '\t- Invalid image name?')
-                                return None
+                                    return None
                         else:
                             s.auth = (username, password)
                             r1 = s.request('get', url_dwld[i])
