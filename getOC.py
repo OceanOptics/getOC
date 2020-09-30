@@ -425,8 +425,8 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
             else:
                 print('%d connection attempts failed, download aborted.\n'
                     '\t- Check login/username.\n'
-                    '\t- Check for connection problems: https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?tid=6447\n'
-                    '\t- Check for blocked IP emailing: connection_problems@oceancolor.gsfc.nasa.gov\n'  % MAX_RETRIES)
+                    '\t- Check for connection problems: for Earthdata download check https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?tid=6447\n'
+                    '\t- Check for blocked IP (for Earthdata download connection_problems@oceancolor.gsfc.nasa.gov)\n'  % MAX_RETRIES)
                 return None
 
 
