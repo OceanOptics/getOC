@@ -18,6 +18,7 @@ import os
 from time import sleep
 from pandas import DataFrame, read_csv
 import socket
+import math
 
 __version__ = "0.6.0"
 verbose = False
@@ -159,17 +160,17 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
 
 
 def format_dtlatlon_query(poi,access_platform):
-    # Add some room in the given location
-    n, s = str(poi['lat'] + 1), str(poi['lat'] - 1)
-    # w, e = str(poi['lon'] - 2), str(poi['lon'] + 2)
-    if poi['lon'] < -178:
-        w = str(poi['lon'] - 2 + 360)
+    # Add some room (~120 nautical miles) in the given location, and wrap longitude into [-180:180]
+    n, s = str(poi['lat'] + 2), str(poi['lat'] - 2)
+    lon_box = 2 / (math.cos(poi['lat'] * math.pi / 180))
+    if poi['lon'] < -180 + lon_box
+        w = str(poi['lon'] - lon_box + 360)
     else:
-        w = str(poi['lon'] - 2)
-    if poi['lon'] > 178:
-        e = str(poi['lon'] + 2 - 360)
+        w = str(poi['lon'] - lon_box)
+    if poi['lon'] > 180 - lon_box:
+        e = str(poi['lon'] + lon_box - 360)
     else:
-        e = str(poi['lon'] + 2)
+        e = str(poi['lon'] + lon_box)
 
     if access_platform == 'L1L2_browser':
         day = str((poi['dt'] - datetime(1970, 1, 1)).days)
