@@ -161,8 +161,8 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
 
 def format_dtlatlon_query(poi,access_platform):
     # Add some room (~120 nautical miles) in the given location, and wrap longitude into [-180:180]
-    n, s = str(poi['lat'] + 2), str(poi['lat'] - 2)
-    lon_box = 2 / (math.cos(poi['lat'] * math.pi / 180))
+    n, s = str(poi['lat'] + bounding_box_sz / 60), str(poi['lat'] - bounding_box_sz / 60)
+    lon_box = bounding_box_sz / 60 / (math.cos(poi['lat'] * math.pi / 180))
     if poi['lon'] < -180 + lon_box
         w = str(poi['lon'] - lon_box + 360)
     else:
@@ -461,7 +461,7 @@ if __name__ == "__main__":
                            "example of options for L3SMI are:"
                            "CHL_chl_ocx_4km, CHL_chlor_a_4km, GSM_bbp_443_gsm_9km,"
                            "GSM_chl_gsm_9km, IOP_bb_678_giop_9km, KD490_Kd_490_9km")
-    # OLCI specific options
+    # credential specific options
     parser.add_option("-u", "--username", action="store", dest="username", default=None,
                       help="specify username to login to Copernicus (OLCI / SLSTR), Creodias (MSI) or EarthData (any other plateform")
     # Other options
@@ -470,6 +470,8 @@ if __name__ == "__main__":
     parser.add_option("-r", "--read-image-list", action="store_true", dest="read_image_list", default=False,
                       help="Read previous query from csv file")
     parser.add_option("-q", "--quiet", action="store_false", dest="verbose", default=True)
+    parser.add_option("-box", "--bounding-box-size", action="store", dest="bounding_box_sz", type='float', default=60,
+                      help="specify bounding box size in nautical miles")
     (options, args) = parser.parse_args()
 
 
