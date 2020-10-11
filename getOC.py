@@ -161,9 +161,9 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
 
 def format_dtlatlon_query(poi,access_platform):
     # Add some room (~120 nautical miles) in the given location, and wrap longitude into [-180:180]
-    n, s = str(poi['lat'] + bounding_box_sz / 60), str(poi['lat'] - bounding_box_sz / 60)
-    lon_box = bounding_box_sz / 60 / (math.cos(poi['lat'] * math.pi / 180))
-    if poi['lon'] < -180 + lon_box
+    n, s = str(poi['lat'] + options.bounding_box_sz / 60), str(poi['lat'] - options.bounding_box_sz / 60)
+    lon_box = options.bounding_box_sz / 60 / (math.cos(poi['lat'] * math.pi / 180))
+    if poi['lon'] < -180 + lon_box:
         w = str(poi['lon'] - lon_box + 360)
     else:
         w = str(poi['lon'] - lon_box)
@@ -187,7 +187,7 @@ def get_login_key(username, password): # get login key for creodias download
     try:
         return login_key['access_token']
     except KeyError:
-        raise RuntimeError(f'Unable to get login key. Response was {login_key}')
+        raise RuntimeError('Unable to get login key. Response was ' + {login_key})
 
 
 def get_image_list_copernicus(pois, access_platform, username, password, query_string, instrument, level='L1'):
@@ -470,7 +470,7 @@ if __name__ == "__main__":
     parser.add_option("-r", "--read-image-list", action="store_true", dest="read_image_list", default=False,
                       help="Read previous query from csv file")
     parser.add_option("-q", "--quiet", action="store_false", dest="verbose", default=True)
-    parser.add_option("-box", "--bounding-box-size", action="store", dest="bounding_box_sz", type='float', default=60,
+    parser.add_option("--box", "--bounding-box-size", action="store", dest="bounding_box_sz", type='float', default=60,
                       help="specify bounding box size in nautical miles")
     (options, args) = parser.parse_args()
 
