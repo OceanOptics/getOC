@@ -574,3 +574,5 @@ if __name__ == "__main__":
 
     # Download images from url list
     login_download(image_names, url_dwld, options.instrument, access_platform, options.username, password)
+
+    print('Download completed')
