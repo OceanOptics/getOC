@@ -161,12 +161,12 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
 
 def format_dtlatlon_query(poi,access_platform):
     # Add some room using bounding box option (or default = 60 nautical miles) around the given location, and wrap longitude into [-180:180]
-    if n + options.bounding_box_sz / 60 > 90:
-        n = 90
+    if poi['lat'] + options.bounding_box_sz / 60 > 90:
+        n = str(90)
     else:
         n = str(poi['lat'] + options.bounding_box_sz / 60)
-    if s - options.bounding_box_sz / 60 < -90:
-        s = -90
+    if poi['lat'] - options.bounding_box_sz / 60 < -90:
+        s = str(-90)
     else:
         s = str(poi['lat'] - options.bounding_box_sz / 60)
 
