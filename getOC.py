@@ -347,7 +347,7 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
             if verbose:
                 print('Skip ' + image_names[i])
         else:
-            MAX_RETRIES = 3
+            MAX_RETRIES = 5
             WAIT_SECONDS = 30
             for j in range(MAX_RETRIES):
                 try:
@@ -385,21 +385,41 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                             s.auth = (username, password)
                             r1 = s.request('get', url_dwld[i])
                             r = s.get(r1.url, auth=(username, password), stream=True, timeout=30, headers=headers)
-                        if r.ok:
-                            if verbose:
-                                print('Downloading ' + image_names[i])
-                            handle = open(image_names[i], "wb")
-                            for chunk in r.iter_content(chunk_size=512):
-                                if chunk:
-                                    handle.write(chunk)
-                            handle.close()
-                            break
-                        else:
-                            print('Unable to download from EarthData.\n'
-                              '\t- Did you accept the End User License Agreement for this dataset ?\n'
-                              '\t- Check login/username\n'
-                              '\t- Invalid image name?')
-                            return None
+                        r.raise_for_status()
+                        if verbose:
+                            print('Downloading ' + image_names[i])
+                        handle = open(image_names[i], "wb")
+                        for chunk in r.iter_content(chunk_size=512):
+                            if chunk:
+                                handle.write(chunk)
+                        handle.close()
+                        break
+
+                        # if r.ok:
+                        #     if verbose:
+                        #         print('Downloading ' + image_names[i])
+                        #     handle = open(image_names[i], "wb")
+                        #     for chunk in r.iter_content(chunk_size=512):
+                        #         if chunk:
+                        #             handle.write(chunk)
+                        #     handle.close()
+                        #     break
+                        # else:
+                        #     print('Unable to download from EarthData.\n'
+                        #       '\t- Did you accept the End User License Agreement for this dataset ?\n'
+                        #       '\t- Check login/username\n'
+                        #       '\t- Invalid image name?')
+                        #     return None
+                except requests.exceptions.HTTPError as e:
+                    # Whoops it wasn't a 200
+                    print('Requests error: ' + str(e) + '.\n'
+                      '\tUnable to download from EarthData:\n'
+                      '\t- Did you accept the End User License Agreement for this dataset ?\n'
+                      '\t- Check login/username\n'
+                      '\t- Invalid image name?')
+                except TimeoutError:
+                    print('Chunk download timeout, try again ...')
+                    handle.close()
                 except requests.exceptions.ConnectionError:
                     print('Build https connection failed: download failed, reconnection ...')
                     handle.close()
