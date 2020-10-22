@@ -19,6 +19,9 @@ from time import sleep
 from pandas import DataFrame, read_csv
 import socket
 import math
+# import timeout_decorator
+# from signal import signal
+# from multiprocessing import Process, Event, Lock
 
 __version__ = "0.6.0"
 verbose = False
@@ -331,6 +334,21 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
 
     return pois
 
+# def download_timeout():
+#     stat_dwnl = datetime.now()
+#     while datetime.now() - stat_dwnl < timedelta(seconds=900):
+#         sleep(5)
+#         print(datetime.now())
+#     raise TimeoutError
+
+# def chunk_download(image_names, r):
+#     handle = open(image_names, "wb")
+#     for chunk in r.iter_content(chunk_size=512):
+#         if chunk:
+#             handle.write(chunk)
+#     handle.close()
+#     return None
+
 
 def login_download(image_names, url_dwld, instrument, access_platform, username, password):
     # Login to Earth Data and Download image
@@ -347,7 +365,7 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
             if verbose:
                 print('Skip ' + image_names[i])
         else:
-            MAX_RETRIES = 5
+            MAX_RETRIES = 3
             WAIT_SECONDS = 30
             for j in range(MAX_RETRIES):
                 try:
@@ -364,10 +382,11 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                                       '\t- User offline products retrieval quota exceeded (1 fetch max)')
                                     break
                                 else:
+                                    print(r.status_code)
+                                    print(r.text)
                                     print('Unable to download from https://scihub.copernicus.eu/\n'
                                       '\t- Check login/username\n'
                                       '\t- Invalid image name?')
-                                    return None
                         elif access_platform == 'creodias':
                             r = s.get(url_dwld[i] + login_key, stream=True, timeout=30, headers=headers)
                             if r.status_code != 200:
@@ -377,10 +396,11 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                                     login_key = get_login_key(username, password)
                                     r = s.get(url_dwld[i] + login_key, stream=True, timeout=30, headers=headers)
                                 else:
+                                    print(r.status_code)
+                                    print(r.text)
                                     print('Unable to download from https://auth.creodias.eu/\n'
                                       '\t- Check login/username\n'
                                       '\t- Invalid image name?')
-                                    return None
                         else:
                             s.auth = (username, password)
                             r1 = s.request('get', url_dwld[i])
@@ -413,49 +433,50 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                 except requests.exceptions.HTTPError as e:
                     # Whoops it wasn't a 200
                     print('Requests error: ' + str(e) + '.\n'
-                      '\tUnable to download from EarthData:\n'
-                      '\t- Did you accept the End User License Agreement for this dataset ?\n'
-                      '\t- Check login/username\n'
-                      '\t- Invalid image name?')
-                except TimeoutError:
-                    print('Chunk download timeout, try again ...')
-                    handle.close()
+                      '\tAttempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
+                # except TimeoutError:
+                #     print('Chunk download timeout, attempt [' + str(j) + '/' + MAX_RETRIES + 'reconnection ...')
+                #     handle.close()
                 except requests.exceptions.ConnectionError:
-                    print('Build https connection failed: download failed, reconnection ...')
+                    print('Build https connection failed: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.ProxyError:
-                    print('Proxy error: download failed, reconnection ...')
+                    print('Proxy error: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.SSLError:
-                    print('SSL error: download failed, reconnection ...')
+                    print('SSL error: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.Timeout:
-                    print('Request timed out: download failed, reconnection ...')
+                    print('Request timed out: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.ReadTimeout:
-                    print('Read timed out: download failed, reconnection ...')
+                    print('Read timed out: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.ConnectTimeout:
-                    print('Connection timed out: download failed, reconnection ...')
+                    print('Connection timed out: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.RequestException:
-                    print('Unknown error: download failed, reconnection ...')
+                    print('Unknown error: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.InvalidURL:
-                    print('URL not valid: download failed, reconnection ...')
+                    print('URL not valid: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.ChunkedEncodingError:
-                    print('The server declared chunked encoding but sent an invalid chunk: download failed, reconnection ...')
+                    print('The server declared chunked encoding but sent an invalid chunk: download failed, attempt [' + str(j) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except socket.timeout:
-                    print('Connetion lost: download failed, reconnection ...')
+                    print('Connetion lost: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
+                if j+2 == MAX_RETRIES:
+                    return None
                 sleep(WAIT_SECONDS)
             else:
-                print('%d connection attempts failed, download aborted.\n'
+                print('%d All connection attempts failed, download aborted.\n'
+                    '\t- Did you accept the End User License Agreement for this dataset ?\n'
                     '\t- Check login/username.\n'
-                    '\t- Check for connection problems: for Earthdata download check https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?tid=6447\n'
-                    '\t- Check for blocked IP (for Earthdata download connection_problems@oceancolor.gsfc.nasa.gov)\n'  % MAX_RETRIES)
+                    '\t- Check image name/url in *.csv file\n'
+                    '\t- Check for connection problems \n' # for Earthdata download check https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?tid=6447
+                    '\t- Check for blocked IP \n') # (for Earthdata download connection_problems@oceancolor.gsfc.nasa.gov)
                 return None
 
 
