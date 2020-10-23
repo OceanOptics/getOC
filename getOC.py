@@ -87,7 +87,7 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
         if access_platform == 'copernicus':
             # check which spatial resolution for OLCI, if not input choose lower resolution ERR
             if 'ERR' not in level and 'EFR' not in level and instrument == 'OLCI':
-                level = level + '_ERR'
+                level = level + '_EFR'
                 timeliness = '%20AND%20timeliness:"Non%20Time%20Critical"'
             elif instrument != 'OLCI': # delete EFR and ERR if mistakenly input for other sensors
                 level = level.replace('EFR','')
