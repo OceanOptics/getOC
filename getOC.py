@@ -43,14 +43,15 @@ URL_CREODIAS_GET_FILE = 'https://zipper.creodias.eu/download'
 INSTRUMENT_FILE_ID = {'SeaWiFS': 'S', 'MODIS-Aqua': 'A', 'MODIS-Terra': 'T', 'OCTS': 'O', 'CZCS': 'C',
                       'MERIS': 'M', 'VIIRS': 'V', 'HICO': 'H', 'OLCI': 'Sentinel3', 'SLSTR': 'Sentinel3', 'MSI': 'Sentinel2'}
 INSTRUMENT_QUERY_ID = {'SeaWiFS': 'MLAC', 'MODIS-Aqua': 'amod', 'MODIS-Terra': 'tmod', 'OCTS': 'oc', 'CZCS': 'cz',
-                       'MERIS': 'RR', 'VIIRS': 'vrsn', 'HICO': 'hi', 'OLCI': 's3br@s3ar', 'MSI': 'MSI', 'SLSTR': 'SL'}
+                       'MERIS': 'RR', 'VIIRS': 'vrsn', 'HICO': 'hi', 'OLCI': 'OL', 'MSI': 'MSI', 'SLSTR': 'SL'}
 DATA_TYPE_ID = {'SeaWiFS': 'LAC', 'MODIS-Aqua': 'LAC', 'MODIS-Terra': 'LAC', 'OCTS': 'LAC', 'CZCS': '',
-                'MERIS': 'RR', 'VIIRS': 'SNPP', 'HICO': 'ISS', 'OLCI_L1_ERR': 'OL_1_ERR___', 'SLSTR_L1': 'RBT',
-                'OLCI_L1_EFR': 'OL_1_EFR___', 'MSI_L1C': '', 'MSI_L2A': 'S2MSI2A'}
+                'MERIS': 'RR', 'VIIRS': 'SNPP', 'HICO': 'ISS', 'OLCI_L1_ERR': 'ERR', 'OLCI_L1_EFR': 'EFR', 
+                'SLSTR_L1_RBT': 'RBT', 'OLCI_L2_WRR': 'WRR', 'OLCI_L2_WFR': 'WFR', 'SLSTR_L2_WCT': 'WCT', 'SLSTR_L2_WST': 'WST',
+                'MSI_L1C': 'L1C', 'MSI_L2A': 'L2A'} # copernicus 'MSI_L2A': 'S2MSI2A'
+LEVEL_CREODIAS = {'L1': 'LEVEL1', 'L2': 'LEVEL2', 'L1C': 'LEVEL1C', 'L2A': 'LEVEL2A'}
 SEARCH_CMR = {'SeaWiFS': 'SEAWIFS', 'MODIS-Aqua': 'MODISA', 'MODIS-Terra': 'MODIST',
               'OCTS': 'OCTS', 'CZCS': 'CZCS','VIIRS': 'VIIRSN'}
 EXTENSION_L1A = {'MODIS-Aqua': '','MODIS-Terra': '', 'VIIRS': '.nc'}
-
 
 def get_platform(dates, instrument, level):
     # Get acces plateform depending on product and date:
@@ -59,15 +60,16 @@ def get_platform(dates, instrument, level):
     # - Common Metadata Repository (CMR): MODISA, MODIST, VIIRS, SeaWiFS, OCTS, CZCS (L2 and L3)
     # - L1/L2browser Ocean Color (requires 1s delay => slow): MODISA, MODIST, VIIRS, SeaWiFS, OCTS, CZCS (L0 and L1) / MERIS, HICO (all levels)
     # Note: if any query point dedicated to CMR is less than 60 days old, the entire query will be redirected to L1/L2browser (delay of storage on CMR)
-    delta_today = datetime.today() - dates
-    if instrument == 'MSI' and level == 'L2A' and all(delta_today > timedelta(days=365)):
-        raise ValueError(instrument + "level " + level + " supported only for online products on Copernicus (< 1 year old)")
-    elif instrument == 'OLCI' or instrument == 'MSI' and level == 'L2A':
-        if instrument == 'MSI' and any(delta_today < timedelta(days=365)):
-            print('Warning: query older than 12 month old will be ignored (offline products unavailable for bulk download)')
-        access_platform = 'copernicus'
-        password = getpass(prompt='Copernicus Password: ', stream=None)
-    elif instrument == 'MSI' or instrument == 'SLSTR':
+
+    # delta_today = datetime.today() - dates
+    # if instrument == 'MSI' and level == 'L2A' and all(delta_today > timedelta(days=365)):
+    #     raise ValueError(instrument + "level " + level + " supported only for online products on Copernicus (< 1 year old)")
+    # elif instrument == 'MSI' and level == 'L2A': #instrument == 'OLCI' or 
+    #     if instrument == 'MSI' and any(delta_today < timedelta(days=365)):
+    #         print('Warning: query older than 12 month old will be ignored (offline products unavailable for bulk download)')
+    #     access_platform = 'copernicus'
+    #     password = getpass(prompt='Copernicus Password: ', stream=None)
+    if instrument == 'MSI' or instrument == 'SLSTR' or instrument == 'OLCI':
         access_platform = 'creodias'
         password = getpass(prompt='Creodias Password: ', stream=None)
     elif level == 'L0' or level == 'L1A' or level == 'GEO' or instrument == 'MERIS' or instrument == 'HICO' or any(delta_today < timedelta(days=60)):
@@ -105,15 +107,22 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
             query_string = sen + '%20AND%20' + 'instrumentshortname:' + instrument + timeliness + '%20AND%20'
 
         elif access_platform == 'creodias':
-            # OLCI possible to get from CREODIAS but easier to get from Copernicus
+            # https://finder.creodias.eu/resto/api2/collections/Sentinel2/search.json?instrument=MSI&productType=L2A&processingLevel=LEVEL2A
+            # check which spatial resolution for SLSTR and OLCI, if not input choose default:
+            if 'L1' in level and 'ERR' not in level and 'EFR' not in level and instrument == 'OLCI':
+                level = level + '_EFR'
+            if 'L1' in level and 'RBT' not in level and instrument == 'SLSTR':
+                level = level + '_RBT'
+            if 'L2' in level and 'WFR' not in level and 'WRR' not in level and instrument == 'OLCI':
+                level = level + '_WFR'
+            if 'L2' in level and 'WST' not in level and 'WCT' not in level and instrument == 'SLSTR':
+                level = level + '_WST'
             sat = INSTRUMENT_FILE_ID[instrument]
             dattyp = instrument + '_' + level
-            if dattyp in DATA_TYPE_ID:
-                protyp = '&producttype:' + DATA_TYPE_ID[dattyp]
-            else:
+            if dattyp not in DATA_TYPE_ID:
                 raise ValueError("level " + level + " not supported for " + instrument + " sensor")
-
-            query_string = sat + '/search.json?instrument=' + INSTRUMENT_QUERY_ID[instrument] + protyp
+            else:
+                query_string = sat + '/search.json?instrument=' + INSTRUMENT_QUERY_ID[instrument] + '&productType=' + DATA_TYPE_ID[dattyp] + '&processingLevel=' + LEVEL_CREODIAS[level.split('_')[0]]
 
         elif access_platform == 'L1L2_browser':
             sen = '&sen=' + INSTRUMENT_QUERY_ID[instrument]
@@ -579,10 +588,10 @@ if __name__ == "__main__":
         access_platform,password = get_platform(points_of_interest['dt'], options.instrument, options.level)
         query_string = set_query_string(access_platform, options.instrument, options.level, options.product)
 
-        if access_platform == 'copernicus':
-            pois = get_image_list_copernicus(points_of_interest, access_platform, options.username, password,
-                            query_string, options.instrument, options.level)
-        elif access_platform == 'creodias':
+        # if access_platform == 'copernicus':
+        #     pois = get_image_list_copernicus(points_of_interest, access_platform, options.username, password,
+        #                     query_string, options.instrument, options.level)
+        if access_platform == 'creodias':
             pois = get_image_list_creodias(points_of_interest, access_platform, options.username, password,
                             query_string, options.instrument, options.level)
         elif access_platform == 'L1L2_browser':
