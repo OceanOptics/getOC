@@ -61,7 +61,7 @@ def get_platform(dates, instrument, level):
     # - L1/L2browser Ocean Color (requires 1s delay => slow): MODISA, MODIST, VIIRS, SeaWiFS, OCTS, CZCS (L0 and L1) / MERIS, HICO (all levels)
     # Note: if any query point dedicated to CMR is less than 60 days old, the entire query will be redirected to L1/L2browser (delay of storage on CMR)
 
-    # delta_today = datetime.today() - dates
+    delta_today = datetime.today() - dates
     # if instrument == 'MSI' and level == 'L2A' and all(delta_today > timedelta(days=365)):
     #     raise ValueError(instrument + "level " + level + " supported only for online products on Copernicus (< 1 year old)")
     # elif instrument == 'MSI' and level == 'L2A': #instrument == 'OLCI' or 
