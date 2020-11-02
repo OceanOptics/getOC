@@ -19,6 +19,7 @@ from time import sleep
 from pandas import DataFrame, read_csv
 import socket
 import math
+import urllib
 # import timeout_decorator
 # from signal import signal
 # from multiprocessing import Process, Event, Lock
@@ -55,20 +56,20 @@ EXTENSION_L1A = {'MODIS-Aqua': '','MODIS-Terra': '', 'VIIRS': '.nc'}
 
 def get_platform(dates, instrument, level):
     # Get acces plateform depending on product and date:
-    # - COPERNICUS: MSI-L2A < 12 month, OLCI
-    # - CREODIAS: MSI-L1C, SLSTR
+    # - COPERNICUS: MSI-L2A < 12 month, OLCI # DEPRECATED
+    # - CREODIAS: MSI, OLCI, SLSTR (L1 and L2)
     # - Common Metadata Repository (CMR): MODISA, MODIST, VIIRS, SeaWiFS, OCTS, CZCS (L2 and L3)
     # - L1/L2browser Ocean Color (requires 1s delay => slow): MODISA, MODIST, VIIRS, SeaWiFS, OCTS, CZCS (L0 and L1) / MERIS, HICO (all levels)
     # Note: if any query point dedicated to CMR is less than 60 days old, the entire query will be redirected to L1/L2browser (delay of storage on CMR)
 
     delta_today = datetime.today() - dates
-    # if instrument == 'MSI' and level == 'L2A' and all(delta_today > timedelta(days=365)):
-    #     raise ValueError(instrument + "level " + level + " supported only for online products on Copernicus (< 1 year old)")
-    # elif instrument == 'MSI' and level == 'L2A': #instrument == 'OLCI' or 
-    #     if instrument == 'MSI' and any(delta_today < timedelta(days=365)):
-    #         print('Warning: query older than 12 month old will be ignored (offline products unavailable for bulk download)')
-    #     access_platform = 'copernicus'
-    #     password = getpass(prompt='Copernicus Password: ', stream=None)
+    # if instrument == 'MSI' and level == 'L2A' and all(delta_today > timedelta(days=365)): # DEPRECATED
+    #     raise ValueError(instrument + "level " + level + " supported only for online products on Copernicus (< 1 year old)") # DEPRECATED
+    # elif instrument == 'MSI' and level == 'L2A': #instrument == 'OLCI' or  # DEPRECATED
+    #     if instrument == 'MSI' and any(delta_today < timedelta(days=365)): # DEPRECATED
+    #         print('Warning: query older than 12 month old will be ignored (offline products unavailable for bulk download)') # DEPRECATED
+    #     access_platform = 'copernicus' # DEPRECATED
+    #     password = getpass(prompt='Copernicus Password: ', stream=None) # DEPRECATED
     if instrument == 'MSI' or instrument == 'SLSTR' or instrument == 'OLCI':
         access_platform = 'creodias'
         password = getpass(prompt='Creodias Password: ', stream=None)
@@ -86,7 +87,7 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
     image_names = list()
     # Get parameters to build query
     if instrument in INSTRUMENT_FILE_ID.keys():
-        if access_platform == 'copernicus':
+        if access_platform == 'copernicus': # DEPRECATED
             # check which spatial resolution for OLCI, if not input choose lower resolution ERR
             if 'ERR' not in level and 'EFR' not in level and instrument == 'OLCI':
                 level = level + '_EFR'
@@ -210,7 +211,7 @@ def get_login_key(username, password): # get login key for creodias download
         raise RuntimeError('Unable to get login key. Response was ' + {login_key})
 
 
-def get_image_list_copernicus(pois, access_platform, username, password, query_string, instrument, level='L1'):
+def get_image_list_copernicus(pois, access_platform, username, password, query_string, instrument, level='L1'): # DEPRECATED
     # Add column to points of interest data frame
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
@@ -267,6 +268,7 @@ def get_image_list_creodias(pois, access_platform, username, password, query_str
 
         # populate lists with image name and url
         pois.at[i, 'image_names'] = [sub.replace('.SAFE', '') + '.zip' for sub in imlistraw]
+        # pois.at[i, 'image_names'] = imlistraw
         pois.at[i, 'url'] = [URL_CREODIAS_GET_FILE + '/' + s + '?token=' for s in fid_list]
 
     return pois
@@ -343,12 +345,49 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
 
     return pois
 
-# def download_timeout():
-#     stat_dwnl = datetime.now()
-#     while datetime.now() - stat_dwnl < timedelta(seconds=900):
-#         sleep(5)
-#         print(datetime.now())
-#     raise TimeoutError
+
+def request_platform(s, image_names, url_dwld, access_platform, username, password, login_key):
+    if access_platform == 'copernicus': # DEPRECATED
+        login_key = None
+        headers = {'Range':f'bytes={os.stat(image_names).st_size}-'}
+        r = s.get(url_dwld, auth=(username, password), stream=True, timeout=900, headers=headers)
+        if r.status_code != 200 and r.status_code != 206:
+            if 'offline products retrieval quota exceeded' in r.text:
+                print('Unable to download from https://scihub.copernicus.eu/\n'
+                  '\t- User offline products retrieval quota exceeded (1 fetch max)')
+                return None
+            else:
+                print(r.status_code)
+                print(r.text)
+                print('Unable to download from https://scihub.copernicus.eu/\n'
+                  '\t- Check login/username\n'
+                  '\t- Invalid image name?')
+        return r,login_key
+    elif access_platform == 'creodias':
+        headers = {'Range':f'bytes={os.stat(image_names).st_size}-'}
+        r = s.get(url_dwld + login_key, stream=True, timeout=900, headers=headers)
+        if r.status_code != 200 and r.status_code != 206:
+            if r.text == 'Expired signature!':
+                print('Login expired, reconnection ...')
+                # get login key to include it into url
+                login_key = get_login_key(username, password)
+                r = s.get(url_dwld + login_key, stream=True, timeout=900, headers=headers)
+            else:
+                print(r.status_code)
+                print(r.text)
+                print('Unable to download from https://auth.creodias.eu/\n'
+                  '\t- Check login/username\n'
+                  '\t- Invalid image name?')
+        return r,login_key
+    else:
+        # modify header to hide requests query and mimic web browser
+        # headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',}
+        login_key = None
+        s.auth = (username, password)
+        headers = {'Range':f'bytes={os.stat(image_names).st_size}-'}
+        r1 = s.request('get', url_dwld)
+        r = s.get(r1.url, auth=(username, password), stream=True, timeout=900, headers=headers)
+        return r,login_key
 
 # def chunk_download(image_names, r):
 #     handle = open(image_names, "wb")
@@ -361,7 +400,6 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
 
 def login_download(image_names, url_dwld, instrument, access_platform, username, password):
     # Login to Earth Data and Download image
-    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',}
     if url_dwld is None and image_names is None:
         if verbose:
             print('No image to download.')
@@ -369,6 +407,8 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
     if access_platform == 'creodias':
         # get login key to include it into url
         login_key = get_login_key(username, password)
+    else:
+        login_key = None
     for i in range(len(url_dwld)):
         if os.path.isfile(image_names[i]):
             if verbose:
@@ -378,51 +418,38 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
             WAIT_SECONDS = 30
             for j in range(MAX_RETRIES):
                 try:
-                    # modify header to hide requests query and mimic web browser
-                    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',}
                     # Open session
                     with requests.Session() as s:
-                        # Login and download by chunk
-                        if access_platform == 'copernicus':
-                            r = s.get(url_dwld[i], auth=(username, password), stream=True, timeout=30, headers=headers)
-                            if r.status_code != 200:
-                                if 'offline products retrieval quota exceeded' in r.text:
-                                    print('Unable to download from https://scihub.copernicus.eu/\n'
-                                      '\t- User offline products retrieval quota exceeded (1 fetch max)')
-                                    break
-                                else:
-                                    print(r.status_code)
-                                    print(r.text)
-                                    print('Unable to download from https://scihub.copernicus.eu/\n'
-                                      '\t- Check login/username\n'
-                                      '\t- Invalid image name?')
-                        elif access_platform == 'creodias':
-                            r = s.get(url_dwld[i] + login_key, stream=True, timeout=30, headers=headers)
-                            if r.status_code != 200:
-                                if r.text == 'Expired signature!':
-                                    print('Login expired, reconnection ...')
-                                    # get login key to include it into url
-                                    login_key = get_login_key(username, password)
-                                    r = s.get(url_dwld[i] + login_key, stream=True, timeout=30, headers=headers)
-                                else:
-                                    print(r.status_code)
-                                    print(r.text)
-                                    print('Unable to download from https://auth.creodias.eu/\n'
-                                      '\t- Check login/username\n'
-                                      '\t- Invalid image name?')
-                        else:
-                            s.auth = (username, password)
-                            r1 = s.request('get', url_dwld[i])
-                            r = s.get(r1.url, auth=(username, password), stream=True, timeout=30, headers=headers)
-                        r.raise_for_status()
-                        if verbose:
-                            print('Downloading ' + image_names[i])
                         handle = open(image_names[i], "wb")
-                        for chunk in r.iter_content(chunk_size=512):
-                            if chunk:
-                                handle.write(chunk)
+                        r,login_key = request_platform(s, image_names[i], url_dwld[i], access_platform, username, password, login_key)
+                        r.raise_for_status()
+                        expected_length = int(r.headers.get('Content-Length'))
+                        while os.stat(image_names[i]).st_size < expected_length: # complete the file even if connection is cut while downloading and file is incomplete
+                            # print('Downloading ' + image_names[i] + ' 0%')
+                            r,login_key = request_platform(s, image_names[i], url_dwld[i], access_platform, username, password, login_key)
+                            r.raise_for_status()
+                            with open(image_names[i], "ab") as handle:
+                                for chunk in r.iter_content(chunk_size=16*1024):
+                                    if chunk:
+                                        handle.write(chunk)
+                                        if verbose:
+                                            print('{}\r'.format('Downloading ' + image_names[i] + '      ' + str(round(os.stat(image_names[i]).st_size/expected_length*100)) + '%'), end="")
+                                    # sys.stdout.write(str(round(actual_length/expected_length*100)) + '%')
+                            if handle.closed:
+                                handle = open(image_names[i], "ab")
+                            handle.flush()
+                        if os.stat(image_names[i]).st_size < expected_length:
+                            raise IOError('incomplete read ({} bytes read, {} more expected)'.format(actual_length, expected_length - actual_length))
                         handle.close()
+                        print()
                         break
+
+                        # handle = open(image_names[i], "wb")
+                        # for chunk in r.iter_content(chunk_size=512):
+                        #     if chunk:
+                        #         handle.write(chunk)
+                        # handle.close()
+                        # break
 
                         # if r.ok:
                         #     if verbose:
@@ -445,7 +472,7 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                       '\tAttempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                 # except TimeoutError:
                 #     print('Chunk download timeout, attempt [' + str(j) + '/' + MAX_RETRIES + 'reconnection ...')
-                #     handle.close()
+                    handle.close()
                 except requests.exceptions.ConnectionError:
                     print('Build https connection failed: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
