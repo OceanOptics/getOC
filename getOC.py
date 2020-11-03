@@ -19,7 +19,6 @@ from time import sleep
 from pandas import DataFrame, read_csv
 import socket
 import math
-import urllib
 # import timeout_decorator
 # from signal import signal
 # from multiprocessing import Process, Event, Lock
@@ -349,7 +348,7 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
 def request_platform(s, image_names, url_dwld, access_platform, username, password, login_key):
     if access_platform == 'copernicus': # DEPRECATED
         login_key = None
-        headers = {'Range':f'bytes={os.stat(image_names).st_size}-'}
+        headers = {'Range':'bytes=' + str(os.stat(image_names).st_size) + '-'}
         r = s.get(url_dwld, auth=(username, password), stream=True, timeout=900, headers=headers)
         if r.status_code != 200 and r.status_code != 206:
             if 'offline products retrieval quota exceeded' in r.text:
@@ -364,7 +363,7 @@ def request_platform(s, image_names, url_dwld, access_platform, username, passwo
                   '\t- Invalid image name?')
         return r,login_key
     elif access_platform == 'creodias':
-        headers = {'Range':f'bytes={os.stat(image_names).st_size}-'}
+        headers = {'Range':'bytes=' + str(os.stat(image_names).st_size) + '-'}
         r = s.get(url_dwld + login_key, stream=True, timeout=900, headers=headers)
         if r.status_code != 200 and r.status_code != 206:
             if r.text == 'Expired signature!':
@@ -381,10 +380,10 @@ def request_platform(s, image_names, url_dwld, access_platform, username, passwo
         return r,login_key
     else:
         # modify header to hide requests query and mimic web browser
-        # headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',}
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',}
         login_key = None
         s.auth = (username, password)
-        headers = {'Range':f'bytes={os.stat(image_names).st_size}-'}
+        # headers = {'Range':'bytes=' + str(os.stat(image_names).st_size) + '-'}
         r1 = s.request('get', url_dwld)
         r = s.get(r1.url, auth=(username, password), stream=True, timeout=900, headers=headers)
         return r,login_key
@@ -423,27 +422,36 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                         handle = open(image_names[i], "wb")
                         r,login_key = request_platform(s, image_names[i], url_dwld[i], access_platform, username, password, login_key)
                         r.raise_for_status()
-                        expected_length = int(r.headers.get('Content-Length'))
-                        while os.stat(image_names[i]).st_size < expected_length: # complete the file even if connection is cut while downloading and file is incomplete
-                            # print('Downloading ' + image_names[i] + ' 0%')
-                            r,login_key = request_platform(s, image_names[i], url_dwld[i], access_platform, username, password, login_key)
-                            r.raise_for_status()
+                        if access_platform == 'creodias':
+                            expected_length = int(r.headers.get('Content-Length'))
+                            while os.stat(image_names[i]).st_size < expected_length: # complete the file even if connection is cut while downloading and file is incomplete
+                                # print('Downloading ' + image_names[i] + ' 0%')
+                                r,login_key = request_platform(s, image_names[i], url_dwld[i], access_platform, username, password, login_key)
+                                r.raise_for_status()
+                                with open(image_names[i], "ab") as handle:
+                                    for chunk in r.iter_content(chunk_size=16*1024):
+                                        if chunk:
+                                            handle.write(chunk)
+                                            if verbose:
+                                                sys.stdout.write('\rDownloading ' + image_names[i] + '      ' + str(round(os.stat(image_names[i]).st_size/expected_length*100)) + '%')
+                                                # print('{}\r'.format('Downloading ' + image_names[i] + '      ' + str(round(os.stat(image_names[i]).st_size/expected_length*100)) + '%'), end="")
+                                if handle.closed:
+                                    handle = open(image_names[i], "ab")
+                                handle.flush()
+                            if os.stat(image_names[i]).st_size < expected_length:
+                                raise IOError('incomplete read ({} bytes read, {} more expected)'.format(actual_length, expected_length - actual_length))
+                            handle.close()
+                            print()
+                            break
+                        else:
+                            if verbose:
+                                print('Downloading ' + image_names[i])
                             with open(image_names[i], "ab") as handle:
                                 for chunk in r.iter_content(chunk_size=16*1024):
                                     if chunk:
                                         handle.write(chunk)
-                                        if verbose:
-                                            print('{}\r'.format('Downloading ' + image_names[i] + '      ' + str(round(os.stat(image_names[i]).st_size/expected_length*100)) + '%'), end="")
-                                    # sys.stdout.write(str(round(actual_length/expected_length*100)) + '%')
-                            if handle.closed:
-                                handle = open(image_names[i], "ab")
-                            handle.flush()
-                        if os.stat(image_names[i]).st_size < expected_length:
-                            raise IOError('incomplete read ({} bytes read, {} more expected)'.format(actual_length, expected_length - actual_length))
-                        handle.close()
-                        print()
-                        break
-
+                            handle.close()
+                            break
                         # handle = open(image_names[i], "wb")
                         # for chunk in r.iter_content(chunk_size=512):
                         #     if chunk:
@@ -615,7 +623,7 @@ if __name__ == "__main__":
         access_platform,password = get_platform(points_of_interest['dt'], options.instrument, options.level)
         query_string = set_query_string(access_platform, options.instrument, options.level, options.product)
 
-        # if access_platform == 'copernicus':
+        # if access_platform == 'copernicus': # DEPRECATED
         #     pois = get_image_list_copernicus(points_of_interest, access_platform, options.username, password,
         #                     query_string, options.instrument, options.level)
         if access_platform == 'creodias':
