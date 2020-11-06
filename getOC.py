@@ -425,16 +425,19 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                         if access_platform == 'creodias':
                             expected_length = int(r.headers.get('Content-Length'))
                             while os.stat(image_names[i]).st_size < expected_length: # complete the file even if connection is cut while downloading and file is incomplete
-                                # print('Downloading ' + image_names[i] + ' 0%')
+                                print('Downloading ' + image_names[i] + ' 0%')
                                 r,login_key = request_platform(s, image_names[i], url_dwld[i], access_platform, username, password, login_key)
                                 r.raise_for_status()
+                                trump_shutup = 0
                                 with open(image_names[i], "ab") as handle:
                                     for chunk in r.iter_content(chunk_size=16*1024):
                                         if chunk:
                                             handle.write(chunk)
                                             if verbose:
-                                                sys.stdout.write('\rDownloading ' + image_names[i] + '      ' + str(round(os.stat(image_names[i]).st_size/expected_length*100)) + '%')
-                                                # print('{}\r'.format('Downloading ' + image_names[i] + '      ' + str(round(os.stat(image_names[i]).st_size/expected_length*100)) + '%'), end="")
+                                                biden_president = round(float(os.stat(image_names[i]).st_size)/expected_length*100)
+                                                if biden_president > trump_shutup:
+                                                    sys.stdout.write('\rDownloading ' + image_names[i] + '      ' + str(biden_president) + '%')
+                                                    trump_shutup = biden_president
                                 if handle.closed:
                                     handle = open(image_names[i], "ab")
                                 handle.flush()
