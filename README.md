@@ -11,7 +11,7 @@ getOC is a python utility in command line to easily bulk download Ocean Color im
 Level 3 download is DEPRECATED
 
 ### Argument description:
-**`-i`** <instrument>
+**`-i`** **instrument**
     - **`SeaWiFS`**
     - **`MODIS-Aqua`**
     - **`MODIS-Terra`**
@@ -25,33 +25,44 @@ Level 3 download is DEPRECATED
     - **`SLSTR`**
     - **`MSI`**
 
-**`-l`** <level>
-    - **`L1C`** or **`L2A`** for **`MSI`**
-    - **`L1A`** or **`L2`** for **`MODIS-Aqua`**, **`MODIS-Terra`**, **`VIIRSN`**, **`VIIRSJ1`**
-    - **`L1 and L2 for OCLI`** and **`SLSTR`**, full resolution [default for **`OCLI`** and **`SLSTR`**]
-    - **`L1_ERR`** and **`L2_WRR`** for **`OLCI`** low reolution
-    - **`L2_WCT`** for **`SLSTR`** low resolution (L1 full resolution not implemented)
+**`-l`** **level**
+    - **`MSI`**:
+            - **`L1C`**
+            - **`L2A`**
+    - **`MODIS-Aqua`** **`MODIS-Terra`** **`VIIRSN`** **`VIIRSJ1`**:
+            - **`L1A`**
+            - **`L2`**
+    - **`OCLI`** full resolution [default]:
+            - **`L1`** or **`L1_EFR`**
+            - **`L2`** or **`L2_WFR`**
+    - **`OCLI`** low resolution:
+            - **`L1_ERR`**
+            - **`L2_WRR`**
+    - **`SLSTR`** low resolution:
+            - **`L1`** or **`L1_RBT`**
+            - **`L2`** or **`L2_WST`** [default; GHRSST recommendations]
+            - **`L2_WCT`** [weighted combinations of brightness temperatures]
 
-**`-u`** <username>      
+**`-u`** **username**     
     - Earthdata login for NASA satellites
     - Creodias login for ESA satellites)
 
-**`-w`** <write>
+**`-w`** **write**
     Prints the image list on a copy of the csv file after the query is completed.
 
-**`-r`** <read>
+**`-r`** **read**
     getOC loads the list previously queried and printed, to avoid querying twice the same list
 
-**`-p`** <product>
+**`-p`** **product**
 Specify the product type to download:
     - **`OC`**    [default]
     - **`IOP`**    [Deprecated]
     - **`SST`**
 
-**`--box`** <bounding box>
+**`--box`** **bounding box**
     Define the size of the bounding box around the point of interest in nautical miles. Downloads all images that intersect with this box.
 
-**`-q`** <quiet>
+**`-q`** **quiet**
     Quiet please ! getOC does not output any information relative to the download and querying of the points of interest.
 
 ### Usage examples:
