@@ -41,17 +41,18 @@ URL_CREODIAS_GET_FILE = 'https://zipper.creodias.eu/download'
 # Documentation of Ocean Color Data Format Specification
 #   https://oceancolor.gsfc.nasa.gov/products/
 INSTRUMENT_FILE_ID = {'SeaWiFS': 'S', 'MODIS-Aqua': 'A', 'MODIS-Terra': 'T', 'OCTS': 'O', 'CZCS': 'C',
-                      'MERIS': 'M', 'VIIRS': 'V', 'HICO': 'H', 'OLCI': 'Sentinel3', 'SLSTR': 'Sentinel3', 'MSI': 'Sentinel2'}
+                      'MERIS': 'M', 'VIIRSN': 'V', 'VIIRSJ1': 'V', 'HICO': 'H', 'OLCI': 'Sentinel3', 'SLSTR': 'Sentinel3', 'MSI': 'Sentinel2'}
 INSTRUMENT_QUERY_ID = {'SeaWiFS': 'MLAC', 'MODIS-Aqua': 'amod', 'MODIS-Terra': 'tmod', 'OCTS': 'oc', 'CZCS': 'cz',
-                       'MERIS': 'RR', 'VIIRS': 'vrsn', 'HICO': 'hi', 'OLCI': 'OL', 'MSI': 'MSI', 'SLSTR': 'SL'}
+                       'MERIS': 'RR', 'VIIRSN': 'vrsn', 'VIIRSJ1': 'vrj1', 'HICO': 'hi', 'OLCI': 'OL', 'MSI': 'MSI', 'SLSTR': 'SL'}
 DATA_TYPE_ID = {'SeaWiFS': 'LAC', 'MODIS-Aqua': 'LAC', 'MODIS-Terra': 'LAC', 'OCTS': 'LAC', 'CZCS': '',
-                'MERIS': 'RR', 'VIIRS': 'SNPP', 'HICO': 'ISS', 'OLCI_L1_ERR': 'ERR', 'OLCI_L1_EFR': 'EFR', 
+                'MERIS': 'RR', 'VIIRSN': 'SNPP', 'VIIRSJ1': 'JPSS1','HICO': 'ISS', 'OLCI_L1_ERR': 'ERR', 'OLCI_L1_EFR': 'EFR', 
                 'SLSTR_L1_RBT': 'RBT', 'OLCI_L2_WRR': 'WRR', 'OLCI_L2_WFR': 'WFR', 'SLSTR_L2_WCT': 'WCT', 'SLSTR_L2_WST': 'WST',
                 'MSI_L1C': 'L1C', 'MSI_L2A': 'L2A'} # copernicus 'MSI_L2A': 'S2MSI2A'
 LEVEL_CREODIAS = {'L1': 'LEVEL1', 'L2': 'LEVEL2', 'L1C': 'LEVEL1C', 'L2A': 'LEVEL2A'}
 SEARCH_CMR = {'SeaWiFS': 'SEAWIFS', 'MODIS-Aqua': 'MODISA', 'MODIS-Terra': 'MODIST',
-              'OCTS': 'OCTS', 'CZCS': 'CZCS','VIIRS': 'VIIRSN'}
-EXTENSION_L1A = {'MODIS-Aqua': '','MODIS-Terra': '', 'VIIRS': '.nc'}
+              'OCTS': 'OCTS', 'CZCS': 'CZCS', 'VIIRSN': 'VIIRSN', 'VIIRSJ1': 'VIIRSJ1'}
+EXTENSION_L1A = {'MODIS-Aqua': '','MODIS-Terra': '', 'VIIRSN': '.nc', 'VIIRSJ1': '.nc'}
+
 
 def get_platform(dates, instrument, level):
     # Get acces plateform depending on product and date:
