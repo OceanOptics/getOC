@@ -134,35 +134,35 @@ SeaWiFS is not supported by getOC at level 1.
 
 
 ### Level 2
-For **MODIS-Aqua**:
-    Choose either OC or SST
+For **MODIS-Aqua**:  
+    Choose either OC or SST  
    
     ./getOC -i MODIS-Aqua -l L2 test.csv -u <earthdata-username> -p OC -w --box 60
    
-For **VIIRSN**:
-    Choose either OC or SST
+For **VIIRSN**:  
+    Choose either OC or SST  
 
     ./getOC -i VIIRSN -l L2 test.csv -u <earthdata-username> -p OC -w --box 60
     
-For **VIIRSJ1**:
-    Only OC available
+For **VIIRSJ1**:  
+    Only OC available  
 
     ./getOC -i VIIRSJ1 -l L2 test.csv -u <earthdata-username> -p OC -w --box 60
     
-For **OLCI**:
-    Only OC available
-    Use either level L2 or L2_WFR for full resolution
-    Use either level L1_ERR for low resolution
+For **OLCI**:  
+    Only OC available  
+    Use either level L2 or L2_WFR for full resolution  
+    Use either level L1_ERR for low resolution  
     
     ./getOC -i OLCI -l L1 test.csv -u <creodias-username> -w --box 60
     
-For **SLSTR**:
-    Only SST available
-    Use either level L2 or L2_WST (default; GHRSST recommendations) or L2_WCT for weighted combinations of brightness temperatures
+For **SLSTR**:  
+    Only SST available  
+    Use either level L2 or L2_WST (default; GHRSST recommendations) or L2_WCT for weighted combinations of brightness temperatures  
     
     ./getOC -i SLSTR -l L2 test.csv -u <creodias-username> -w --box 60
 
-For **MSI**:
+For **MSI**:  
     
     ./getOC -i MSI -l L2A test.csv -u <creodias-username> -w --box 60
     
