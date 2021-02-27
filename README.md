@@ -25,39 +25,55 @@ Level 3 download is DEPRECATED
     - **`SLSTR`**  
     - **`MSI`**  
 
+
+
 **`-l`** **level**  
 **MSI**:  
 - **`L1C`**  
 - **`L2A`**  
+
 **MODIS-Aqua** **MODIS-Terra** **VIIRSN** **VIIRSJ1**:  
 - **`L1A`**  
 - **`L2`**  
+
 **OCLI** full resolution [default]:  
 - **`L1`** or **`L1_EFR`**  
 - **`L2`** or **`L2_WFR`**  
+
 **OCLI** low resolution:  
 - **`L1_ERR`**  
 - **`L2_WRR`**  
+
 **SLSTR** low resolution:  
 - **`L1`** or **`L1_RBT`**  
 - **`L2`** or **`L2_WST`** [default; GHRSST recommendations]  
 - **`L2_WCT`** [weighted combinations of brightness temperatures]  
 
+
+
 **`-u`** **username**  
     - Earthdata login for NASA satellites  
     - Creodias login for ESA satellites)
 
+
+
 **`-w`** **write**  
     Prints the image list on a copy of the csv file after the query is completed.
 
+
+
 **`-r`** **read**  
     getOC loads the list previously queried and printed, to avoid querying twice the same list
+
+
 
 **`-p`** **product**  
     Specify the product type to download:  
     - **`OC`**    [default]  
     - **`IOP`**    [Deprecated]  
     - **`SST`**  
+
+
 
 **`--box`** **bounding box**  
     Define the size of the bounding box around the point of interest in nautical miles. Downloads all images that intersect with this box.
