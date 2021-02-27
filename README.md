@@ -11,7 +11,7 @@ getOC is a python utility in command line to easily bulk download Ocean Color im
 Level 3 download is DEPRECATED
 
 ### Argument description:
-**`-i`** **instrument**
+**`-i`** **instrument**\n
     - **`SeaWiFS`**
     - **`MODIS-Aqua`**
     - **`MODIS-Terra`**
