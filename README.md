@@ -26,9 +26,9 @@ Level 3 download is DEPRECATED
 &nbsp;&nbsp;&nbsp;&nbsp;- **`MSI`**  
 
 **`-l`** **level**  
-**MSI**:  
-- **`L1C`**  
-- **`L2A`**  
+- **MSI**:  
+    - **`L1C`**
+    - **`L2A`**  
 
 **MODIS-Aqua** **MODIS-Terra** **VIIRSN** **VIIRSJ1**:  
 - **`L1A`**  
