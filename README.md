@@ -5,8 +5,8 @@ _Bulk download Ocean Color images (ESA and NASA platforms)._
 
 getOC is a python utility in command line to easily bulk download Ocean Color images from [NASA Ocean Data](https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/) and [ESA CREODIAS](https://finder.creodias.eu/resto/api2/collections/Sentinel2/search.json?) APIs. Provide a list of positions and dates in a csv file (ex: test.csv), select an instrument, a processing level, and a product type and getOC will get the images.
 
-[EARTHDATA account required to download NASA satellites data](https://urs.earthdata.nasa.gov/users/new)
-[CREODIAS account required to download ESA satellites data](https://auth.creodias.eu/auth/realms/dias/protocol/openid-connect/auth?scope=openid+profile+email&response_type=code&redirect_uri=https%3A%2F%2Fcreodias.eu%2Fc%2Fportal%2Flogin&state=9ff87a6f1cefa7fa0e8ec5b49bf9bc33&client_id=CLOUDFERRO_PARTNERS&response_mode=query)
+[EARTHDATA account](https://urs.earthdata.nasa.gov/users/new) required to download NASA satellites data
+[CREODIAS account](https://auth.creodias.eu/auth/realms/dias/protocol/openid-connect/auth?scope=openid+profile+email&response_type=code&redirect_uri=https%3A%2F%2Fcreodias.eu%2Fc%2Fportal%2Flogin&state=9ff87a6f1cefa7fa0e8ec5b49bf9bc33&client_id=CLOUDFERRO_PARTNERS&response_mode=query) required to download ESA satellites data
 
 Level 3 download is DEPRECATED
 
