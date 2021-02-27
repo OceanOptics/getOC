@@ -12,20 +12,18 @@ Level 3 download is DEPRECATED
 
 ### Argument description:
 **`-i`** **instrument**  
-    - **`SeaWiFS`**  
-    - **`MODIS-Aqua`**  
-    - **`MODIS-Terra`**  
-    - **`OCTS`**  
-    - **`CZCS`**  
-    - **`MERIS`**  
-    - **`VIIRSN`**  
-    - **`VIIRSJ1`**  
-    - **`HICO`**  
-    - **`OLCI`**  
-    - **`SLSTR`**  
-    - **`MSI`**  
-
-
+&nbsp;&nbsp;&nbsp;&nbsp;- **`SeaWiFS`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`MODIS-Aqua`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`MODIS-Terra`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`OCTS`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`CZCS`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`MERIS`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`VIIRSN`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`VIIRSJ1`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`HICO`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`OLCI`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`SLSTR`**  
+&nbsp;&nbsp;&nbsp;&nbsp;- **`MSI`**  
 
 **`-l`** **level**  
 **MSI**:  
@@ -49,31 +47,21 @@ Level 3 download is DEPRECATED
 - **`L2`** or **`L2_WST`** [default; GHRSST recommendations]  
 - **`L2_WCT`** [weighted combinations of brightness temperatures]  
 
-
-
 **`-u`** **username**  
     - Earthdata login for NASA satellites  
     - Creodias login for ESA satellites)
 
-
-
 **`-w`** **write**  
     Prints the image list on a copy of the csv file after the query is completed.
 
-
-
 **`-r`** **read**  
     getOC loads the list previously queried and printed, to avoid querying twice the same list
-
-
 
 **`-p`** **product**  
     Specify the product type to download:  
     - **`OC`**    [default]  
     - **`IOP`**    [Deprecated]  
     - **`SST`**  
-
-
 
 **`--box`** **bounding box**  
     Define the size of the bounding box around the point of interest in nautical miles. Downloads all images that intersect with this box.
