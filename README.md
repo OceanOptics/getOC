@@ -91,46 +91,46 @@ For level 1 and level 2 downloads only (not needed for level 3), a comma separat
 Images will be downloaded if they are in the same day UTC as the one specified by the date of the point of interest. For times close to the beginning or the end of the day it can be worth adding a line with the previous or following day.
 
 ### Level 1
-For **MODIS-Aqua**:
+For **MODIS-Aqua**:  
    
     ./getOC -i MODIS-Aqua -l L1A test.csv -u <earthdata-username> -w --box 60
    
-Note GEO file are included in SeaDAS for MODIS-Aqua (no need to download them).
+Note GEO file are included in SeaDAS for MODIS-Aqua (no need to download them).  
    
-For **VIIRSN**:
+For **VIIRSN**:  
 
     ./getOC -i VIIRSN -l L1A test.csv -u <earthdata-username> -w --box 60
     
-Note getOC will automatically download GEO files in the same time as L1A files for VIIRSN L1A.
+Note getOC will automatically download GEO files in the same time as L1A files for VIIRSN L1A.  
 
-For **VIIRSJ1**:
+For **VIIRSJ1**:  
 
     ./getOC -i VIIRSJ1 -l L1A test.csv -u <earthdata-username> -w --box 60
     
-Note getOC will automatically download GEO files in the same time as L1A files for VIIRSJ1 L1A.
+Note getOC will automatically download GEO files in the same time as L1A files for VIIRSJ1 L1A.  
     
-For **OLCI**:
-    Use either level L1 or L1_EFR for full resolution
-    Use either level L1_ERR for low resolution
+For **OLCI**:  
+    Use either level L1 or L1_EFR for full resolution  
+    Use either level L1_ERR for low resolution  
     
     ./getOC -i OLCI -l L1 test.csv -u <creodias-username> -w --box 60
     
-Note no need for GEO files (images are already geo referenced).
+Note no need for GEO files (images are already geo referenced).  
 
-For **SLSTR**:
-    Use either level L1 or L1_RBT
+For **SLSTR**:  
+    Use either level L1 or L1_RBT  
     
     ./getOC -i SLSTR -l L1 test.csv -u <creodias-username> -w --box 60
     
-Note no need for GEO files (images are already geo referenced).
+Note no need for GEO files (images are already geo referenced).  
 
-For **MSI**:
+For **MSI**:  
     
     ./getOC -i MSI -l L1C test.csv -u <creodias-username> -w --box 60
     
-Note no need for GEO files (images are already geo referenced).
+Note no need for GEO files (images are already geo referenced).  
 
-SeaWiFS is not supported by getOC at level 1.
+SeaWiFS is not supported by getOC at level 1.  
 
 
 ### Level 2
