@@ -26,19 +26,19 @@ Level 3 download is DEPRECATED
     - **`MSI`**  
 
 **`-l`** **level**  
-#####- **`MSI`**:  
+**MSI**:  
 - **`L1C`**  
 - **`L2A`**  
-#####- **`MODIS-Aqua`** **`MODIS-Terra`** **`VIIRSN`** **`VIIRSJ1`**:  
+**MODIS-Aqua** **MODIS-Terra** **VIIRSN** **VIIRSJ1**:  
 - **`L1A`**  
 - **`L2`**  
-#####- **`OCLI`** full resolution [default]:  
+**OCLI** full resolution [default]:  
 - **`L1`** or **`L1_EFR`**  
 - **`L2`** or **`L2_WFR`**  
-#####- **`OCLI`** low resolution:  
+**OCLI** low resolution:  
 - **`L1_ERR`**  
 - **`L2_WRR`**  
-#####- **`SLSTR`** low resolution:  
+**SLSTR** low resolution:  
 - **`L1`** or **`L1_RBT`**  
 - **`L2`** or **`L2_WST`** [default; GHRSST recommendations]  
 - **`L2_WCT`** [weighted combinations of brightness temperatures]  
