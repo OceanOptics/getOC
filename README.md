@@ -11,58 +11,58 @@ getOC is a python utility in command line to easily bulk download Ocean Color im
 Level 3 download is DEPRECATED
 
 ### Argument description:
-**`-i`** **instrument**\n
-    - **`SeaWiFS`**
-    - **`MODIS-Aqua`**
-    - **`MODIS-Terra`**
-    - **`OCTS`**
-    - **`CZCS`**
-    - **`MERIS`**
-    - **`VIIRSN`**
-    - **`VIIRSJ1`**
-    - **`HICO`**
-    - **`OLCI`**
-    - **`SLSTR`**
-    - **`MSI`**
+**`-i`** **instrument**  
+    - **`SeaWiFS`**  
+    - **`MODIS-Aqua`**  
+    - **`MODIS-Terra`**  
+    - **`OCTS`**  
+    - **`CZCS`**  
+    - **`MERIS`**  
+    - **`VIIRSN`**  
+    - **`VIIRSJ1`**  
+    - **`HICO`**  
+    - **`OLCI`**  
+    - **`SLSTR`**  
+    - **`MSI`**  
 
-**`-l`** **level**
-    - **`MSI`**:
-            - **`L1C`**
-            - **`L2A`**
-    - **`MODIS-Aqua`** **`MODIS-Terra`** **`VIIRSN`** **`VIIRSJ1`**:
-            - **`L1A`**
-            - **`L2`**
-    - **`OCLI`** full resolution [default]:
-            - **`L1`** or **`L1_EFR`**
-            - **`L2`** or **`L2_WFR`**
-    - **`OCLI`** low resolution:
-            - **`L1_ERR`**
-            - **`L2_WRR`**
-    - **`SLSTR`** low resolution:
-            - **`L1`** or **`L1_RBT`**
-            - **`L2`** or **`L2_WST`** [default; GHRSST recommendations]
-            - **`L2_WCT`** [weighted combinations of brightness temperatures]
+**`-l`** **level**  
+    - **`MSI`**:  
+            - **`L1C`**  
+            - **`L2A`**  
+    - **`MODIS-Aqua`** **`MODIS-Terra`** **`VIIRSN`** **`VIIRSJ1`**:  
+            - **`L1A`**  
+            - **`L2`**  
+    - **`OCLI`** full resolution [default]:  
+            - **`L1`** or **`L1_EFR`**  
+            - **`L2`** or **`L2_WFR`**  
+    - **`OCLI`** low resolution:  
+            - **`L1_ERR`**  
+            - **`L2_WRR`**  
+    - **`SLSTR`** low resolution:  
+            - **`L1`** or **`L1_RBT`**  
+            - **`L2`** or **`L2_WST`** [default; GHRSST recommendations]  
+            - **`L2_WCT`** [weighted combinations of brightness temperatures]  
 
-**`-u`** **username**     
-    - Earthdata login for NASA satellites
+**`-u`** **username**  
+    - Earthdata login for NASA satellites  
     - Creodias login for ESA satellites)
 
-**`-w`** **write**
+**`-w`** **write**  
     Prints the image list on a copy of the csv file after the query is completed.
 
-**`-r`** **read**
+**`-r`** **read**  
     getOC loads the list previously queried and printed, to avoid querying twice the same list
 
-**`-p`** **product**
-Specify the product type to download:
-    - **`OC`**    [default]
-    - **`IOP`**    [Deprecated]
-    - **`SST`**
+**`-p`** **product**  
+    Specify the product type to download:  
+    - **`OC`**    [default]  
+    - **`IOP`**    [Deprecated]  
+    - **`SST`**  
 
-**`--box`** **bounding box**
+**`--box`** **bounding box**  
     Define the size of the bounding box around the point of interest in nautical miles. Downloads all images that intersect with this box.
 
-**`-q`** **quiet**
+**`-q`** **quiet**  
     Quiet please ! getOC does not output any information relative to the download and querying of the points of interest.
 
 ### Usage examples:
