@@ -167,7 +167,7 @@ For **MSI**:
     ./getOC -i MSI -l L2A test.csv -u <creodias-username> -w --box 60
     
 
-### Level 3 DEPRECATED
+### Level 3 DEPRECATED (for now)
 At level 3 the worlds ocean is downloaded for the range of date specified (getOC does not accept a file with a list of positions at this level). Supported sensors are **SeaWiFS**, **MODIS-Aqua**, and **VIIRS**. Usage:
 
     python getOC.py -i <instrument> -l <L3BIN|L3SMI> -s yyyymmdd -e yyyymmdd -b <binning-period> -g <geophysical-parameter>
