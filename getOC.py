@@ -58,8 +58,8 @@ def get_platform(dates, instrument, level):
     # Get acces plateform depending on product and date:
     # - COPERNICUS: MSI-L2A < 12 month, OLCI # DEPRECATED
     # - CREODIAS: MSI, OLCI, SLSTR (L1 and L2)
-    # - Common Metadata Repository (CMR): MODISA, MODIST, VIIRS, SeaWiFS, OCTS, CZCS (L2 and L3)
-    # - L1/L2browser Ocean Color (requires 1s delay => slow): MODISA, MODIST, VIIRS, SeaWiFS, OCTS, CZCS (L0 and L1) / MERIS, HICO (all levels)
+    # - Common Metadata Repository (CMR): MODISA, MODIST, VIIRSN, SeaWiFS, OCTS, CZCS (L2 and L3)
+    # - L1/L2browser Ocean Color (requires 1s delay => slow): MODISA, MODIST, VIIRSJ1, SeaWiFS, OCTS, CZCS (L0 and L1) / MERIS, HICO (all levels)
     # Note: if any query point dedicated to CMR is less than 60 days old, the entire query will be redirected to L1/L2browser (delay of storage on CMR)
 
     delta_today = datetime.today() - dates
@@ -593,6 +593,7 @@ if __name__ == "__main__":
 
 
     image_names = list()
+    url_dwld = list()
     # Get list of images to download
     if options.read_image_list:
         if os.path.isfile(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
@@ -606,8 +607,6 @@ if __name__ == "__main__":
             access_platform,password = get_platform(points_of_interest['dt'], options.instrument, options.level)
 
             # Parse image_names and url
-            image_names = list()
-            url_dwld = list()
             for index, record in pois.iterrows():
                 # Convert 'stringified' list to list
                 imli = record['image_names'].split(';')
@@ -642,8 +641,6 @@ if __name__ == "__main__":
 
         points_of_interest = pois.copy()
         # parse image_names
-        image_names = list()
-        url_dwld = list()
         prod_meta = list()
         for _, pois in pois.iterrows():
             image_names.extend(pois['image_names'])
