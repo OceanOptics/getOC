@@ -169,7 +169,7 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
         return query_string
 
     else:
-        raise ValueError("instrument not supported:'" + instrument + "'")
+        raise ValueError("instrument not supported: " + instrument)
 
 
 def format_dtlatlon_query(poi,access_platform):
@@ -267,7 +267,8 @@ def get_image_list_creodias(pois, access_platform, username, password, query_str
         fid_list = re.findall(r'"download":{"url":"https:\\/\\/zipper.creodias.eu\\/download\\/(.*?)","mimeType"', r.text)
 
         # populate lists with image name and url
-        pois.at[i, 'image_names'] = [sub.replace('.SAFE', '') + '.zip' for sub in imlistraw]
+        # pois.at[i, 'image_names'] = [sub.replace('.SAFE', '') + '.zip' for sub in imlistraw]
+        pois.at[i, 'image_names'] = [s + '.zip' for s in imlistraw]
         # pois.at[i, 'image_names'] = imlistraw
         pois.at[i, 'url'] = [URL_CREODIAS_GET_FILE + '/' + s + '?token=' for s in fid_list]
 
@@ -407,6 +408,7 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
     if access_platform == 'creodias':
         # get login key to include it into url
         login_key = get_login_key(username, password)
+        sleep(5)
     else:
         login_key = None
     for i in range(len(url_dwld)):
@@ -415,19 +417,20 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                 print('Skip ' + image_names[i])
         else:
             MAX_RETRIES = 3
-            WAIT_SECONDS = 30
+            WAIT_SECONDS = 120
             for j in range(MAX_RETRIES):
                 try:
                     # Open session
                     with requests.Session() as s:
                         handle = open(image_names[i], "wb")
                         r,login_key = request_platform(s, image_names[i], url_dwld[i], access_platform, username, password, login_key)
+                        sleep(5)
                         r.raise_for_status()
                         if access_platform == 'creodias':
                             expected_length = int(r.headers.get('Content-Length'))
                             while os.stat(image_names[i]).st_size < expected_length: # complete the file even if connection is cut while downloading and file is incomplete
-                                print('Downloading ' + image_names[i] + ' 0%')
                                 r,login_key = request_platform(s, image_names[i], url_dwld[i], access_platform, username, password, login_key)
+                                sleep(5)
                                 r.raise_for_status()
                                 trump_shutup = 0
                                 with open(image_names[i], "ab") as handle:

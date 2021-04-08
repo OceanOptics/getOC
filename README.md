@@ -49,7 +49,7 @@ Level 3 download is DEPRECATED
 
 - **`-u`** **username**  
      - Earthdata login for NASA satellites  
-     - Creodias login for ESA satellites)
+     - Creodias login for ESA satellites
 
 - **`-w`** **write**  
      - Prints the image list on a copy of the csv file after the query is completed.
