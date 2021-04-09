@@ -70,12 +70,12 @@ Level 3 download is DEPRECATED
    - Quiet please ! getOC does not output any information relative to the download and querying of the points of interest.
 
 ### Usage examples:
-    python -m getOC -i MODIS-Aqua -l L2 <filename> -u <earthdata-username> -w -p OC --box 60
-    python -m getOC -i MODIS-Terra -l L2 <filename> -u <earthdata-username> -w -p SST --box 60
-    python -m getOC -i VIIRSJ1 -l L1A <filename> -u <earthdata-username> -w --box 60
-    python -m getOC -i OCLI -l L1 <filename> -u <creodias-username> -w -p OC --box 60
-    python -m getOC -i OCLI -l L2_WRR <filename> -u <creodias-username> -w -p OC --box 60
-    python -m getOC -i MSI -l L1C <filename> -u <creodias-username> -w -p OC --box 60
+    python getOC -i MODIS-Aqua -l L2 <filename> -u <earthdata-username> -w -p OC --box 60
+    python getOC -i MODIS-Terra -l L2 <filename> -u <earthdata-username> -w -p SST --box 60
+    python getOC -i VIIRSJ1 -l L1A <filename> -u <earthdata-username> -w --box 60
+    python getOC -i OCLI -l L1 <filename> -u <creodias-username> -w -p OC --box 60
+    python getOC -i OCLI -l L2_WRR <filename> -u <creodias-username> -w -p OC --box 60
+    python getOC -i MSI -l L1C <filename> -u <creodias-username> -w -p OC --box 60
 
     python -m getOC -i <instrument> -l L3BIN -s yyyymmdd -e yyyymmdd -b <binning-period> -g <geophysical-parameter>     DEPRECATED
 
