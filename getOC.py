@@ -344,7 +344,7 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
             # extract image name from response
             imlistraw = imlistraw + re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
         if level == 'L3m' or product == 'L3b':
-            imlistraw = [ x for x in imlistraw if sresol in x and binning_period in x ]
+            imlistraw = [ x for x in imlistraw if options.sresol in x and options.binning_period in x ]
         # Reformat VIIRS image name
         if instrument == 'VIIRSN' and product == 'SST':
             imlistraw = [ x for x in imlistraw if "SNPP_VIIRS." in x ]
