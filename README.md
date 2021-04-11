@@ -8,7 +8,7 @@ getOC is a python utility in command line to easily bulk download Ocean Color im
 [EARTHDATA account](https://urs.earthdata.nasa.gov/users/new) required to download NASA satellites data
 [CREODIAS account](https://auth.creodias.eu/auth/realms/dias/protocol/openid-connect/auth?scope=openid+profile+email&response_type=code&redirect_uri=https%3A%2F%2Fcreodias.eu%2Fc%2Fportal%2Flogin&state=9ff87a6f1cefa7fa0e8ec5b49bf9bc33&client_id=CLOUDFERRO_PARTNERS&response_mode=query) required to download ESA satellites data
 
-Level 3 download is DEPRECATED
+Level 3 'L3b' and 'L3m' download are only available for MODISA is DEPRECATED
 
 ### Argument description:
 - **`-i`** **instrument**  
@@ -30,9 +30,11 @@ Level 3 download is DEPRECATED
          - **`L1C`**
          - **`L2A`**  
 
-     - **MODIS-Aqua** **MODIS-Terra** **VIIRSN** **VIIRSJ1**:  
+     - **MODIS-Aqua** **MODIS-Terra** **VIIRSN** **VIIRSJ1** **SeaWiFS** **OCTS** **CZCS**:  
          - **`L1A`**  
          - **`L2`**  
+         - **`L3b`**  
+         - **`L3m`**  
 
      - **OCLI** full resolution [default]:  
          - **`L1`** or **`L1_EFR`**  
@@ -46,6 +48,12 @@ Level 3 download is DEPRECATED
          - **`L1`** or **`L1_RBT`**  
          - **`L2`** or **`L2_WST`** [default; GHRSST recommendations]  
          - **`L2_WCT`** [weighted combinations of brightness temperatures]  
+
+     - **MERIS**:  
+         - **`L1`**  
+         - **`L2`**  
+         - **`L3b`**  
+         - **`L3m`** 
 
 - **`-u`** **username**  
      - Earthdata login for NASA satellites  
@@ -167,44 +175,13 @@ For **MSI**:
     ./getOC -i MSI -l L2A test.csv -u <creodias-username> -w --box 60
     
 
-### Level 3 DEPRECATED (for now)
-At level 3 the worlds ocean is downloaded for the range of date specified (getOC does not accept a file with a list of positions at this level). Supported sensors are **SeaWiFS**, **MODIS-Aqua**, and **VIIRS**. Usage:
+### Level 3
+At level 3 the worlds ocean is downloaded. getOC ignores the latitude and longitude in the input csv file. Usage:
 
-    python getOC.py -i <instrument> -l <L3BIN|L3SMI> -s yyyymmdd -e yyyymmdd -b <binning-period> -g <geophysical-parameter>
+    ./getOC -i MODIS-Aqua -l <L3b|L3m> test.csv <earthdata-username> -p <product> -b <binning-period> --res 4km -w
 
 Examples:
 
-    python getOC.py -i SeaWiFS -s 19970101 -e 20101231 -b MO -g GSM_chl_gsm_9km -l L3SMI
-    python getOC.py -i MODIS-Aqua -s 20020101 -e 20180423 -b MO -g GSM -l L3BIN
-    python getOC.py -i MODIS-Aqua -s 20020101 -e 20180423 -b 8D -g GSM_chl_gsm_9km -l L3SMI
-    python getOC.py -i VIIRS -s 20111201 -e 20180423 -b MO -g GSM -l L3BIN
-
-Required arguments:
-  - `-s`: start of period to download, formatted as follow `yyyymmdd`
-  - `-e`: end of period to download, formatted as follow `yyyymmdd`
-  - `-b`: binning period, options are:
-    - `DAY`: daily images
-    - `8D`: 8 days average
-    - `MO`: monthly average
-    - `YR`: yearly average
-  - `-g`: geophysical parameter to download:
-    - supported by `L3BIN`:
-        - `CHL`
-        - `GSM`
-        - `IOP`
-        - `KD490`
-        - `PAR`
-        - `PIC`
-        - `POC`
-        - `QAA`
-        - `RRS`
-        - `ZLEE`
-        - MODIS only: `SST`, `SST4`, and `NSST`
-    - supported by `L3SMI` (non exclusive list):
-        - `CHL_chl_ocx_4km`
-        - `CHL_chlor_a_4km`
-        - `GSM_bbp_443_gsm_9km`
-        - `GSM_chl_gsm_9km`
-        - `IOP_bb_678_giop_9km`
-        - `KD490_Kd_490_9km`
-
+    python getOC -i MODIS-Aqua -l L3b test.csv <earthdata-username> -p POC -b DAY --res 4km -w
+    python getOC -i MODIS-Aqua -l L3m test.csv <earthdata-username> -p CHL -b 8D --res 9km -w
+    python getOC -i MODIS-Aqua -l L3m test.csv <earthdata-username> -p CHL -b MO --res 9km -w

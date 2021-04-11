@@ -60,7 +60,7 @@ def get_platform(dates, instrument, level):
     # - CREODIAS: MSI, OLCI, SLSTR (L1 and L2)
     # - Common Metadata Repository (CMR): MODISA, MODIST, VIIRSN, SeaWiFS, OCTS, CZCS (L2 and L3)
     # - L1/L2browser Ocean Color (requires 1s delay => slow): MODISA, MODIST, VIIRSJ1, SeaWiFS, OCTS, CZCS (L0 and L1) / MERIS, HICO (all levels)
-    # Note: if any query point dedicated to CMR is less than 60 days old, the entire query will be redirected to L1/L2browser (delay of storage on CMR)
+    # Note: if any query point dedicated to CMR is less than 2 days old, the entire query will be redirected to L1/L2browser (delay of storage on CMR)
 
     delta_today = datetime.today() - dates
     # if instrument == 'MSI' and level == 'L2A' and all(delta_today > timedelta(days=365)): # DEPRECATED
@@ -73,7 +73,7 @@ def get_platform(dates, instrument, level):
     if instrument == 'MSI' or instrument == 'SLSTR' or instrument == 'OLCI':
         access_platform = 'creodias'
         password = getpass(prompt='Creodias Password: ', stream=None)
-    elif level == 'L0' or level == 'L1A' or level == 'GEO' or instrument == 'MERIS' or instrument == 'HICO' or any(delta_today < timedelta(days=60)):
+    elif level == 'L0' or level == 'L1A' or level == 'GEO' or instrument == 'MERIS' or instrument == 'HICO' or any(delta_today < timedelta(hours=48)):
         access_platform = 'L1L2_browser'
         password = getpass(prompt='EarthData Password: ', stream=None)
     else:
@@ -336,10 +336,18 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
         r = requests.get(query)
         # extract image name from response
         imlistraw = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
+        # run second query for NRT files if date_st or date_end more recent than 60 days
+        if datetime.utcnow() - day_st < timedelta(days=60) or datetime.utcnow() - day_end < timedelta(days=60):
+            query = URL_CMR + query_string + '_NRT&bounding_box=' + w + ',' +  s + ',' + e + ',' + n + \
+                    '&temporal=' + day_st.strftime("%Y-%m-%dT%H:%M:%SZ,") + day_end.strftime("%Y-%m-%dT%H:%M:%SZ") + '&page_size=2000&page_num=1'
+            r = requests.get(query)
+            # extract image name from response
+            imlistraw = imlistraw + re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
+        if level == 'L3m' or product == 'L3b':
+            imlistraw = [ x for x in imlistraw if sresol in x and binning_period in x ]
         # Reformat VIIRS image name
-        if instrument == 'VIIRS' and product == 'SST':
+        if instrument == 'VIIRSN' and product == 'SST':
             imlistraw = [ x for x in imlistraw if "SNPP_VIIRS." in x ]
-
         # populate lists with image name and url
         pois.at[i, 'image_names'] = imlistraw
         pois.at[i, 'url'] = [URL_GET_FILE_CMR + s for s in imlistraw]
@@ -537,33 +545,24 @@ if __name__ == "__main__":
     parser = OptionParser(usage="Usage: getOC.py [options] [filename]", version="getOC " + __version__)
     parser.add_option("-i", "--instrument", action="store", dest="instrument",
                       help="specify instrument, available options are: VIIRS, MODIS-Aqua, MODIS-Terra, OCTS, CZCS, MERIS, HICO, "
-                      "OLCI (L1 only), SLSTR (L1 only), MSI (L1C and L2A < 12 month) and SeaWiFS (L3 only)")
+                      "SeaWiFS, OLCI, SLSTR , MSI (L1C and L2A < 12 month)")
     parser.add_option("-l", "--level", action="store", dest="level", default='L2',
                       help="specify processing level, available options are: GEO, L1A, L1C (MSI only), L2A (MSI only), L2, "
-                      "L3BIN, and L3SMI, append '_ERR' to level for lower OLCI resoltion or '_EFR' for full resoltuion")
+                      "L3b (only for EarthData queries), and L3m (only for EarthData queries), append '_ERR' to level for lower OLCI resolution or '_EFR' for full resolution")
     # Level 2 specific option
     parser.add_option("-p", "--product", action="store", dest="product", default='OC',
                       help="specify product identifier (only for L2), available options are: OC, SST, and IOP, "
-                      "not available for Copernicus (OLCI, SLSTR and MSI) queries")
+                      "not available for CREODIAS queries (OLCI, SLSTR and MSI)")
     parser.add_option("-d", "--delay", action="store", dest="query_delay", type='float', default=1,
                       help="Delay between queries only needed to query L1L2_browser")
     # Level 3 specific options
-    parser.add_option("-s", "--start-period", action="store", dest="start_period",
-                      help="specify start period date (only for L3), yyyymmdd")
-    parser.add_option("-e", "--end-period", action="store", dest="end_period",
-                      help="specify end period date (only for L3), yyyymmdd")
     parser.add_option("-b", "--binning-period", action="store", dest="binning_period", default='8D',
                       help="specify binning period (only for L3), available options are: DAY, 8D, MO, and YR")
-    parser.add_option("-g", "--geophysical-parameter", action="store", dest="geophysical_parameter", default='GSM',
-                      help="specify geophysical parameter (only for L3), available options are for L3BIN: "
-                           "CHL, GSM, IOP, KD490, PAR, PIC, POC, QAA, RRS, and ZLEE "
-                           "MODIS also accept SST, SST4, and NSST;"
-                           "example of options for L3SMI are:"
-                           "CHL_chl_ocx_4km, CHL_chlor_a_4km, GSM_bbp_443_gsm_9km,"
-                           "GSM_chl_gsm_9km, IOP_bb_678_giop_9km, KD490_Kd_490_9km")
+    parser.add_option("--res", "--spatial-resolution", action="store", dest="sresol", default='4km',
+                      help="specify spatial resolution (only for L3), available options are: 4km, 9km"
     # credential specific options
     parser.add_option("-u", "--username", action="store", dest="username", default=None,
-                      help="specify username to login to Copernicus (OLCI / SLSTR), Creodias (MSI) or EarthData (any other plateform")
+                      help="specify username to login Creodias (OLCI / SLSTR / MSI) or EarthData (any other sensor)(Copernicus DEPRECATED)")
     # Other options
     parser.add_option("-w", "--write-image-links", action="store_true", dest="write_image_links", default=False,
                       help="Write query results image names and corresponding url into csv file.")
@@ -585,7 +584,7 @@ if __name__ == "__main__":
         print('getOC.py: error: option -u, --username is required')
         sys.exit(-1)
 
-    if len(args) < 1 and options.level not in ['L3BIN', 'L3SMI']:
+    if len(args) < 1 and options.level:
         print(parser.usage)
         print('getOC.py: error: argument filename is required for Level GEO, L1A, or L2')
         sys.exit(-1)
