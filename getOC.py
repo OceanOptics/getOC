@@ -559,7 +559,7 @@ if __name__ == "__main__":
     parser.add_option("-b", "--binning-period", action="store", dest="binning_period", default='8D',
                       help="specify binning period (only for L3), available options are: DAY, 8D, MO, and YR")
     parser.add_option("--res", "--spatial-resolution", action="store", dest="sresol", default='4km',
-                      help="specify spatial resolution (only for L3), available options are: 4km, 9km"
+                      help="specify spatial resolution (only for L3), available options are: 4km, 9km")
     # credential specific options
     parser.add_option("-u", "--username", action="store", dest="username", default=None,
                       help="specify username to login Creodias (OLCI / SLSTR / MSI) or EarthData (any other sensor)(Copernicus DEPRECATED)")
