@@ -303,7 +303,7 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
                 imlistraw = list(dict.fromkeys(imlistraw))
 
         # append VIIRS GEO file names at the end of the list
-        if instrument == 'VIIRS' and level == 'L1A':
+        if 'VIIRS' in instrument and level == 'L1A':
             imlistraw = imlistraw + [sub.replace('L1A', 'GEO-M') for sub in imlistraw]
 
         # Delay next query (might get kicked by server otherwise)
