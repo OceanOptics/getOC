@@ -8,7 +8,7 @@ getOC is a python utility in command line to easily bulk download Ocean Color im
 [EARTHDATA account](https://urs.earthdata.nasa.gov/users/new) required to download NASA satellites data
 [CREODIAS account](https://auth.creodias.eu/auth/realms/dias/protocol/openid-connect/auth?scope=openid+profile+email&response_type=code&redirect_uri=https%3A%2F%2Fcreodias.eu%2Fc%2Fportal%2Flogin&state=9ff87a6f1cefa7fa0e8ec5b49bf9bc33&client_id=CLOUDFERRO_PARTNERS&response_mode=query) required to download ESA satellites data
 
-Level 3 'L3b' and 'L3m' download are only available for MODISA is DEPRECATED
+Level 3 'L3b' and 'L3m' download are only available for NASA satellites
 
 ### Argument description:
 - **`-i`** **instrument**  
