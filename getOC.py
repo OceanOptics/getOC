@@ -319,6 +319,8 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
 
 
 def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L2', product='OC'):
+    # https://cmr.earthdata.nasa.gov/search/granules.json?provider=OB_DAAC&short_name=MODISA_L2_OC&temporal=2016-08-21T00:00:01Z,2016-08-22T00:00:01Z&page_size=2000&page_num=1
+    # https://cmr.earthdata.nasa.gov/search/granules.json?provider=OB_DAAC&short_name=MODISA_L1&temporal=2020-08-16T00:00:01Z,2020-08-17T00:00:01Z&page_size=2000&page_num=1
     # Add column to points of interest data frame
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
@@ -430,42 +432,43 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                 try:
                     # Open session
                     with requests.Session() as s:
-                        handle = open(image_names[i], "wb")
-                        r,login_key = request_platform(s, image_names[i], url_dwld[i], access_platform, username, password, login_key)
+                        handle = open('tmp_' + image_names[i], "wb")
+                        r,login_key = request_platform(s, 'tmp_' + image_names[i], url_dwld[i], access_platform, username, password, login_key)
                         sleep(5)
                         r.raise_for_status()
                         if access_platform == 'creodias':
                             expected_length = int(r.headers.get('Content-Length'))
-                            while os.stat(image_names[i]).st_size < expected_length: # complete the file even if connection is cut while downloading and file is incomplete
-                                r,login_key = request_platform(s, image_names[i], url_dwld[i], access_platform, username, password, login_key)
+                            while os.stat('tmp_' + image_names[i]).st_size < expected_length: # complete the file even if connection is cut while downloading and file is incomplete
+                                r,login_key = request_platform(s, 'tmp_' + image_names[i], url_dwld[i], access_platform, username, password, login_key)
                                 sleep(5)
                                 r.raise_for_status()
                                 trump_shutup = 0
-                                with open(image_names[i], "ab") as handle:
+                                with open('tmp_' + image_names[i], "ab") as handle:
                                     for chunk in r.iter_content(chunk_size=16*1024):
                                         if chunk:
                                             handle.write(chunk)
                                             if verbose:
-                                                biden_president = round(float(os.stat(image_names[i]).st_size)/expected_length*100)
+                                                biden_president = round(float(os.stat('tmp_' + image_names[i]).st_size)/expected_length*100)
                                                 if biden_president > trump_shutup:
                                                     sys.stdout.write('\rDownloading ' + image_names[i] + '      ' + str(biden_president) + '%')
                                                     trump_shutup = biden_president
                                 if handle.closed:
-                                    handle = open(image_names[i], "ab")
+                                    handle = open('tmp_' + image_names[i], "ab")
                                 handle.flush()
-                            if os.stat(image_names[i]).st_size < expected_length:
+                            if os.stat('tmp_' + image_names[i]).st_size < expected_length:
                                 raise IOError('incomplete read ({} bytes read, {} more expected)'.format(actual_length, expected_length - actual_length))
                             handle.close()
                             print()
+                            os.rename('tmp_' + image_names[i], image_names[i])
                             break
                         else:
                             if verbose:
                                 print('Downloading ' + image_names[i])
-                            with open(image_names[i], "ab") as handle:
                                 for chunk in r.iter_content(chunk_size=16*1024):
                                     if chunk:
                                         handle.write(chunk)
                             handle.close()
+                            os.rename('tmp_' + image_names[i], image_names[i])
                             break
                         # handle = open(image_names[i], "wb")
                         # for chunk in r.iter_content(chunk_size=512):
