@@ -72,7 +72,7 @@ Level 3 'L3b' and 'L3m' download are only available for NASA satellites
      - **`SST`**  
 
 **`--box`** **bounding box**  
-   - Define the size of the bounding box around the point of interest in nautical miles. Downloads all images that intersect with this box.
+   - Define the size of the bounding box around the point of interest in nautical miles. Downloads all images that intersect with this box (must be > 0).
 
 **`-q`** **quiet**  
    - Quiet please ! getOC does not output any information relative to the download and querying of the points of interest.
