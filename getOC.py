@@ -464,6 +464,7 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                         else:
                             if verbose:
                                 print('Downloading ' + image_names[i])
+                            with open('tmp_' + image_names[i], "ab") as handle:
                                 for chunk in r.iter_content(chunk_size=16*1024):
                                     if chunk:
                                         handle.write(chunk)
