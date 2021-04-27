@@ -448,7 +448,7 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                                         if chunk:
                                             handle.write(chunk)
                                             if verbose:
-                                                biden_president = round(float(os.stat('tmp_' + image_names[i]).st_size)/expected_length*100)
+                                                biden_president = round(float(os.stat('tmp_' + image_names[i]).st_size)/expected_length*100,-1)
                                                 if biden_president > trump_shutup:
                                                     sys.stdout.write('\rDownloading ' + image_names[i] + '      ' + str(biden_president) + '%')
                                                     trump_shutup = biden_president
