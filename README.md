@@ -24,6 +24,7 @@ Level 3 'L3b' and 'L3m' download are only available for NASA satellites
      - **`OLCI`**  
      - **`SLSTR`**  
      - **`MSI`**  
+     - **`GOCI`**  
 
 - **`-l`** **level**  
      - **MSI**:  
@@ -55,6 +56,10 @@ Level 3 'L3b' and 'L3m' download are only available for NASA satellites
          - **`L3b`**  
          - **`L3m`** 
 
+     - **GOCI**:
+         - **`L1B`**  
+         - **`L2`**  
+
 - **`-u`** **username**  
      - Earthdata login for NASA satellites  
      - Creodias login for ESA satellites
@@ -84,8 +89,7 @@ Level 3 'L3b' and 'L3m' download are only available for NASA satellites
     python getOC -i OCLI -l L1 <filename> -u <creodias-username> -w -p OC --box 60
     python getOC -i OCLI -l L2_WRR <filename> -u <creodias-username> -w -p OC --box 60
     python getOC -i MSI -l L1C <filename> -u <creodias-username> -w -p OC --box 60
-
-    python -m getOC -i <instrument> -l L3BIN -s yyyymmdd -e yyyymmdd -b <binning-period> -g <geophysical-parameter>     DEPRECATED
+    python getOC -i MODIS-Aqua -l L3m test.csv <earthdata-username> -p CHL -b 8D --res 4km -w
 
 If you only need to download images in a given time frame without specifying a position, the [File Search](https://oceandata.sci.gsfc.nasa.gov/api/file_search) utility from NASA might be a better tool. The NASA utility also provides a few wget examples on this [Ocean Color Forum Post](https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?pid=12520).
 
@@ -138,6 +142,10 @@ For **MSI**:
     
 Note no need for GEO files (images are already geo referenced).  
 
+For **GOCI**:  
+    
+    ./getOC -i GOCI -l L1B test.csv -u <creodias-username> -w --box 60
+
 SeaWiFS is not supported by getOC at level 1.  
 
 
@@ -173,6 +181,10 @@ For **SLSTR**:
 For **MSI**:  
     
     ./getOC -i MSI -l L2A test.csv -u <creodias-username> -w --box 60
+
+For **GOCI**:  
+    
+    ./getOC -i GOCI -l L2 test.csv -u <creodias-username> -w --box 60
     
 
 ### Level 3

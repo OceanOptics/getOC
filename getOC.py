@@ -40,9 +40,9 @@ URL_CREODIAS_GET_FILE = 'https://zipper.creodias.eu/download'
 
 # Documentation of Ocean Color Data Format Specification
 #   https://oceancolor.gsfc.nasa.gov/products/
-INSTRUMENT_FILE_ID = {'SeaWiFS': 'S', 'MODIS-Aqua': 'A', 'MODIS-Terra': 'T', 'OCTS': 'O', 'CZCS': 'C',
+INSTRUMENT_FILE_ID = {'SeaWiFS': 'S', 'MODIS-Aqua': 'A', 'MODIS-Terra': 'T', 'OCTS': 'O', 'CZCS': 'C', 'GOCI': 'G',
                       'MERIS': 'M', 'VIIRSN': 'V', 'VIIRSJ1': 'V', 'HICO': 'H', 'OLCI': 'Sentinel3', 'SLSTR': 'Sentinel3', 'MSI': 'Sentinel2'}
-INSTRUMENT_QUERY_ID = {'SeaWiFS': 'MLAC', 'MODIS-Aqua': 'amod', 'MODIS-Terra': 'tmod', 'OCTS': 'oc', 'CZCS': 'cz',
+INSTRUMENT_QUERY_ID = {'SeaWiFS': 'MLAC', 'MODIS-Aqua': 'amod', 'MODIS-Terra': 'tmod', 'OCTS': 'oc', 'CZCS': 'cz', 'GOCI': 'goci',
                        'MERIS': 'RR', 'VIIRSN': 'vrsn', 'VIIRSJ1': 'vrj1', 'HICO': 'hi', 'OLCI': 'OL', 'MSI': 'MSI', 'SLSTR': 'SL'}
 DATA_TYPE_ID = {'SeaWiFS': 'LAC', 'MODIS-Aqua': 'LAC', 'MODIS-Terra': 'LAC', 'OCTS': 'LAC', 'CZCS': '',
                 'MERIS': 'RR', 'VIIRSN': 'SNPP', 'VIIRSJ1': 'JPSS1','HICO': 'ISS', 'OLCI_L1_ERR': 'ERR', 'OLCI_L1_EFR': 'EFR', 
@@ -50,7 +50,7 @@ DATA_TYPE_ID = {'SeaWiFS': 'LAC', 'MODIS-Aqua': 'LAC', 'MODIS-Terra': 'LAC', 'OC
                 'MSI_L1C': 'L1C', 'MSI_L2A': 'L2A'} # copernicus 'MSI_L2A': 'S2MSI2A'
 LEVEL_CREODIAS = {'L1': 'LEVEL1', 'L2': 'LEVEL2', 'L1C': 'LEVEL1C', 'L2A': 'LEVEL2A'}
 SEARCH_CMR = {'SeaWiFS': 'SEAWIFS', 'MODIS-Aqua': 'MODISA', 'MODIS-Terra': 'MODIST',
-              'OCTS': 'OCTS', 'CZCS': 'CZCS', 'VIIRSN': 'VIIRSN', 'VIIRSJ1': 'VIIRSJ1'}
+              'OCTS': 'OCTS', 'CZCS': 'CZCS', 'VIIRSN': 'VIIRSN', 'VIIRSJ1': 'VIIRSJ1', 'GOCI': 'GOCI'}
 EXTENSION_L1A = {'MODIS-Aqua': '','MODIS-Terra': '', 'VIIRSN': '.nc', 'VIIRSJ1': '.nc'}
 
 
@@ -164,7 +164,10 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
 
         elif access_platform == 'cmr':
             sen = SEARCH_CMR[instrument]
-            query_string = '&short_name=' + sen + '_' + level + '_' + product
+            if 'L1' in level:
+                query_string = '&short_name=' + sen + '_' + level[0:2]
+            else:
+                query_string = '&short_name=' + sen + '_' + level + '_' + product
 
         return query_string
 
