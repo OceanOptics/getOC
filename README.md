@@ -1,199 +1,182 @@
 getOC
 =====
 
-_Bulk download Ocean Color images (ESA and NASA platforms)._
+_Bulk download Ocean Color images from ESA and NASA platforms._
 
-getOC is a python utility in command line to easily bulk download Ocean Color images from [NASA Ocean Data](https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/) and [ESA CREODIAS](https://finder.creodias.eu/resto/api2/collections/Sentinel2/search.json?) APIs. Provide a list of positions and dates in a csv file (ex: test.csv), select an instrument, a processing level, and a product type and getOC will get the images.
+getOC is a python utility simplifying bulk download of Ocean Color images
+from [NASA Ocean Data](https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/)
+and [ESA CREODIAS](https://finder.creodias.eu/resto/api2/collections/Sentinel2/search.json?) APIs. getOC takes as input
+a csv file with the list of positions and dates of interest (ex: test.csv) and it downloads images for the selected
+instrument, processing level, and product type. Depending on the options selected
+an [EARTHDATA](https://urs.earthdata.nasa.gov/users/new) or a [CREODIAS](https://portal.creodias.eu/register.php)
+account is required. A strong internet connection is recommended.
 
-[EARTHDATA account](https://urs.earthdata.nasa.gov/users/new) required to download NASA satellites data
-[CREODIAS account](https://auth.creodias.eu/auth/realms/dias/protocol/openid-connect/auth?scope=openid+profile+email&response_type=code&redirect_uri=https%3A%2F%2Fcreodias.eu%2Fc%2Fportal%2Flogin&state=9ff87a6f1cefa7fa0e8ec5b49bf9bc33&client_id=CLOUDFERRO_PARTNERS&response_mode=query) required to download ESA satellites data
+If you only need to download images in a given time frame without specifying a position,
+the [File Search](https://oceandata.sci.gsfc.nasa.gov/api/file_search) utility from NASA might be a better tool. The
+NASA utility also provides a few wget examples on
+this [Ocean Color Forum Post](https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?pid=12520).
 
-Level 3 'L3b' and 'L3m' download are only available for NASA satellites
+## Supported instrument
 
-### Argument description:
-- **`-i`** **instrument**  
-     - **`SeaWiFS`**  
-     - **`MODIS-Aqua`**  
-     - **`MODIS-Terra`**  
-     - **`OCTS`**  
-     - **`CZCS`**  
-     - **`MERIS`**  
-     - **`VIIRSN`**  
-     - **`VIIRSJ1`**  
-     - **`HICO`**  
-     - **`OLCI`**  
-     - **`SLSTR`**  
-     - **`MSI`**  
-     - **`GOCI`**  
+| Instrument Name | Instrument Acronym | Temporal Coverage | Spatial Coverage | Level | L2 Product | 
+| --- | --- | --- | --- | --- | --- |
+| Coastal Zone Color Scanner | CZCZ | 1978-1986 | global@1km | L1A, L2, L3m | OC |
+| Ocean Color Temperature Sensor | OCTS | 1996-1997 | global@700m | L1A, L2 | OC |
+| Sea Viewing Wide Field Scanner | SeaWiFS | 1997-2010@daily | global@1.1km | L1A, L2, L3m | OC |
+| Moderate Resolution Imaging Spectroradiometer Terra | MODIS-Terra@daily | 1999-now | global@0.25,0.5,1km | L1A, L2, L3m | OC |
+| Moderate Resolution Imaging Spectroradiometer Aqua | MODIS-Aqua@daily | 2002-now | global@0.25,0.5,1km | L1A, L2, L3m | OC, SST |
+| MEdium Resolution Imaging Spectrometer (Reduced/Full Resolution) | MERIS-RR, MERIS-FR@daily | 2002-2012 | global@1km | L1, L2 | OC |
+| Geostationary Ocean Color Imager | GOCI | 2010-now@hourly | 36ºN 130ºE@500m | L1B, L2 | OC |
+| Visible Infrared Imaging Radiometer Suite (Suomi NPP) | VIIRSN@daily | 2011-now | global@1km | L1A, L2, L3m | OC, SST |
+| Visible Infrared Imaging Radiometer Suite (JPSS-1) | VIIRSJ1@daily | 2017-now | global@1km | L1A, L2, L3m | OC |
+| MultiSpectral Instrument (Sentinel-2A/B) | MSI | 2015-now@5days | coastal@10,20,60m | L1C, L2A | OC |
+| Ocean and Land Colour Instrument (Sentinel-3A/B) | OLCI | 2016-now@daily | global@300m | L1_EFR, L1_ERR, L2_WFR, L2_WRR | OC |
+| Sea and Land Surface Temperature Radiometer (Sentinel-3A/B) | SLSTR@daily | 2016-now | global@0.5-1km| L1, L2_WST, L2_WCT| SST |
 
-- **`-l`** **level**  
-     - **MSI**:  
-         - **`L1C`**
-         - **`L2A`**  
+Resolutions are indicative for Level 1 and 2 data, Level 3 is only available at 4 or 9 km.
 
-     - **MODIS-Aqua** **MODIS-Terra** **VIIRSN** **VIIRSJ1** **SeaWiFS** **OCTS** **CZCS**:  
-         - **`L1A`**  
-         - **`L2`**  
-         - **`L3b`**  
-         - **`L3m`**  
+## Command Line Usage
 
-     - **OCLI** full resolution [default]:  
-         - **`L1`** or **`L1_EFR`**  
-         - **`L2`** or **`L2_WFR`**  
+Typical call from bash:
 
-     - **OCLI** low resolution:  
-         - **`L1_ERR`**  
-         - **`L2_WRR`**  
+    python getOC -i VIIRSJ1 -l L2 <filename> -u <earthdata-username> -w --box 60
 
-     - **SLSTR** low resolution:  
-         - **`L1`** or **`L1_RBT`**  
-         - **`L2`** or **`L2_WST`** [default; GHRSST recommendations]  
-         - **`L2_WCT`** [weighted combinations of brightness temperatures]  
+General options:
 
-     - **MERIS**:  
-         - **`L1`**  
-         - **`L2`**  
-         - **`L3b`**  
-         - **`L3m`** 
+- `-i INSTRUMENT`, `--instrument=INSTRUMENT`: specify instrument, available options are:
+    - `SeaWiFS`
+    - `MODIS-Aqua`
+    - `MODIS-Terra`
+    - `OCTS`
+    - `CZCS`
+    - `MERIS`
+    - `VIIRSN`
+    - `VIIRSJ1`
+    - `HICO`
+    - `OLCI`
+    - `SLSTR`
+    - `MSI`
+    - `GOCI`
+- `-l LEVEL`, `--level=LEVEL`: specify processing level, available options are listed below (c.f. table above for level
+  compatible with the instrument selected).
+    - `GEO`
+    - `L1`
+    - `L1A`
+    - `L1B`
+    - `L1C`
+    - `L1_EFR` (L1 default for OLCI)
+    - `L1_ERR`
+    - `L1_RBT` (L1 default for SLSTR)
+    - `L2`
+    - `L2A`
+    - `L2_WFR` (L2 default for OLCI)
+    - `L2_WRR`
+    - `L2_WST` (default; GHRSST recommendations)
+    - `L2_WCT` (weighted combinations of brightness temperatures)
+    - `L3m`
+- `-u USERNAME`, `--username=USERNAME`: specify username to login to CREODIAS (for OLCI, SLSTR, or MSI instruments) or
+  EarthData (for any other sensor). Password will be prompted when the script is executed. Note that if a *
+  credentials.ini* file is located in the working directory, the credentials present in that file will be used. In that
+  case the option `-u USERNAME` will be ignored and no password will be prompted.
+- `-w`, `--write-image-links`: getOC first query an api to retrieve the list of images to download. The output of that
+  query can be written to a csv file. getOC can then be restarted directly from that file saving that query time.
+- `-r`, `--read-image-list`: getOC loads the list previously queried and printed, to avoid querying twice the same list
+- `-q`, `--quiet`: Quiet please ! getOC does not output any information relative to the download and querying of the
+  points of interest.
 
-     - **GOCI**:
-         - **`L1B`**  
-         - **`L2`**  
+Options specific to a level:
 
-- **`-u`** **username**  
-     - Earthdata login for NASA satellites  
-     - Creodias login for ESA satellites
+- Level 1 & 2:
+    - `--box=BOUNDING_BOX_SIZE`, `--bounding-box-size=BOUNDING_BOX_SIZE`: Define the size of the bounding box around the
+      point of interest in nautical miles. getOC downloads all images that intersect with this box (must be > 0).
+- Level 2 & 3:
+    - `-p PRODUCT`, `--product=PRODUCT`: Specify the product type to download (c.f. table above for level compatible
+      with the instrument selected):
+        - Level 2:
+            - `OC`     (default)
+            - `IOP`    (deprecated)
+            - `SST`
+        - Level 3:
+            - `CHL`
+            - `POC`
+            - not tested: GSM, IOP, KD, LAND, PAR, PIC, QAA, RRS, and ZLEE
+- Level 3: at this level the world's ocean is downloaded, getOC ignores the latitude and longitudes in the input csv
+  file.
+    - `-b BINNING_PERIOD`, `--binning-period=BINNING_PERIOD`: specify binning period (only for L3), available options
+      are:
+        - DAY (default)
+        - 8D
+        - MO
+        - YR
+    - `--res=SRESOL`, `--spatial-resolution=SRESOL`: specify spatial resolution (only for L3), available options are:
+        - 4km (default)
+        - 9km
 
-- **`-w`** **write**  
-     - Prints the image list on a copy of the csv file after the query is completed.
+Options specific to a downloading platform:
 
-- **`-r`** **read**  
-     - getOC loads the list previously queried and printed, to avoid querying twice the same list
+- NASA Ocean Color Level 1&2 Browser:
+    - `-d QUERY_DELAY`, `--delay=QUERY_DELAY`:Delay between queries only needed to query L1L2_browser. (default=1
+      second)
 
-- **`-p`** **product**  
-    Specify the product type to download:  
-     - **`OC`**    [default]  
-     - **`IOP`**    [Deprecated]  
-     - **`SST`**  
+Instruments specificity:
 
-**`--box`** **bounding box**  
-   - Define the size of the bounding box around the point of interest in nautical miles. Downloads all images that intersect with this box (must be > 0).
+- VIIRS: GEO files required to process L1A files from that sensor are downloaded automatically when the level L1A is
+  selected for this instrument.
+- OLCI: use either level L1 or L1_EFR for full resolution and use level L1_ERR for low resolution. Similarly for level
+  2: level L2 or L2_EFR for full resolution and use level L2_ERR for low resolution.
+- SLSTR: use either level L1 or L1_RBT to download level 1 data.
 
-**`-q`** **quiet**  
-   - Quiet please ! getOC does not output any information relative to the download and querying of the points of interest.
+### Examples:
 
-### Usage examples:
-    python getOC -i MODIS-Aqua -l L2 <filename> -u <earthdata-username> -w -p OC --box 60
-    python getOC -i MODIS-Terra -l L2 <filename> -u <earthdata-username> -w -p SST --box 60
-    python getOC -i VIIRSJ1 -l L1A <filename> -u <earthdata-username> -w --box 60
-    python getOC -i OCLI -l L1 <filename> -u <creodias-username> -w -p OC --box 60
-    python getOC -i OCLI -l L2_WRR <filename> -u <creodias-username> -w -p OC --box 60
-    python getOC -i MSI -l L1C <filename> -u <creodias-username> -w -p OC --box 60
-    python getOC -i MODIS-Aqua -l L3m test.csv <earthdata-username> -p CHL -b 8D --res 4km -w
+Level 1:
 
-If you only need to download images in a given time frame without specifying a position, the [File Search](https://oceandata.sci.gsfc.nasa.gov/api/file_search) utility from NASA might be a better tool. The NASA utility also provides a few wget examples on this [Ocean Color Forum Post](https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?pid=12520).
+    ./getOC.py -i MODIS-Aqua -l L1A test.csv -u <earthdata-username> -w --box 60
+    ./getOC.py -i GOCI -l L1B test.csv -u <creodias-username> -w --box 60 
+    ./getOC.py -i VIIRSN -l L1A test.csv -u <earthdata-username> -w --box 60
+    ./getOC.py -i VIIRSJ1 -l L1A test.csv -u <earthdata-username> -w --box 60
+    ./getOC.py -i MSI -l L1C test.csv -u <creodias-username> -w --box 60
+    ./getOC.py -i OLCI -l L1 test.csv -u <creodias-username> -w --box 60
+    ./getOC.py -i SLSTR -l L1 test.csv -u <creodias-username> -w --box 60
 
-A strong internet connection is recommended. 
+Level 2:
 
-### List of samples
-For level 1 and level 2 downloads only (not needed for level 3), a comma separated value (csv) file must be prepared before using getOC. Each line of the csv file must contain the following information (ex: `test.csv`):
-    - variable name: sample_id,date&time,latitude,longitude
-    - variable type/units: string,yyyy/mm/dd HH:MM:SS (UTC),degN,degE
+    ./getOC.py -i MODIS-Aqua -l L2 test.csv -u <earthdata-username> -p OC -w --box 60
+    ./getOC.py -i GOCI -l L2 test.csv -u <creodias-username> -w --box 60
+    ./getOC.py -i VIIRSN -l L2 test.csv -u <earthdata-username> -p OC -w --box 60
+    ./getOC.py -i VIIRSJ1 -l L2 test.csv -u <earthdata-username> -p OC -w --box 60
+    ./getOC.py -i MSI -l L2A test.csv -u <creodias-username> -w --box 60 
+    ./getOC.py -i OLCI -l L1 test.csv -u <creodias-username> -w --box 60
+    ./getOC.py -i SLSTR -l L2 test.csv -u <creodias-username> -w --box 60
 
-Images will be downloaded if they are in the same day UTC as the one specified by the date of the point of interest. For times close to the beginning or the end of the day it can be worth adding a line with the previous or following day.
+Level 3:
 
-### Level 1
-For **MODIS-Aqua**:  
-   
-    ./getOC -i MODIS-Aqua -l L1A test.csv -u <earthdata-username> -w --box 60
-   
-Note GEO file are included in SeaDAS for MODIS-Aqua (no need to download them).  
-   
-For **VIIRSN**:  
+    ./getOC.py -i MODIS-Aqua -l L3b test.csv <earthdata-username> -p CHL -b 8D --res 4km -w
 
-    ./getOC -i VIIRSN -l L1A test.csv -u <earthdata-username> -w --box 60
+## Module Usage
+
+getOC can be directly integrated into other python applications as follows:
+
+    import getOC
     
-Note getOC will automatically download GEO files in the same time as L1A files for VIIRSN L1A.  
-
-For **VIIRSJ1**:  
-
-    ./getOC -i VIIRSJ1 -l L1A test.csv -u <earthdata-username> -w --box 60
+    filename = 'test.csv'
+    username = 'earthdata-username'
+    password = 'earthdata-password'
+    instrument = 'MODIS-Aqua'
+    level = 'L2'
+    product = 'OC'
     
-Note getOC will automatically download GEO files in the same time as L1A files for VIIRSJ1 L1A.  
+    # Read file with points of interest
+    pois = getOC.read_dataset(TEST_FILES[instrument])
+    # Get downloading platform and set credentials
+    platform = getOC.get_platform(pois.dt.max(), instrument, level)
+    platform.username = username
+    platform.password = password
+    # Query image list
+    pois = platform.get_image_list(pois, instrument, level, product=product,
+                                   bounding_box_size=60)
+    # Download images
+    image_names = [item for sublist in pois.image_names.to_list() for item in sublist]
+    urls = [item for sublist in pois.urls.to_list() for item in sublist]
+    if platform.download_images(image_names, urls) and getOC.verbose:
+        print('Download completed')
     
-For **OLCI**:  
-    Use either level L1 or L1_EFR for full resolution  
-    Use either level L1_ERR for low resolution  
-    
-    ./getOC -i OLCI -l L1 test.csv -u <creodias-username> -w --box 60
-    
-Note no need for GEO files (images are already geo referenced).  
-
-For **SLSTR**:  
-    Use either level L1 or L1_RBT  
-    
-    ./getOC -i SLSTR -l L1 test.csv -u <creodias-username> -w --box 60
-    
-Note no need for GEO files (images are already geo referenced).  
-
-For **MSI**:  
-    
-    ./getOC -i MSI -l L1C test.csv -u <creodias-username> -w --box 60
-    
-Note no need for GEO files (images are already geo referenced).  
-
-For **GOCI**:  
-    
-    ./getOC -i GOCI -l L1B test.csv -u <creodias-username> -w --box 60
-
-SeaWiFS is not supported by getOC at level 1.  
-
-
-### Level 2
-For **MODIS-Aqua**:  
-    Choose either OC or SST  
-   
-    ./getOC -i MODIS-Aqua -l L2 test.csv -u <earthdata-username> -p OC -w --box 60
-   
-For **VIIRSN**:  
-    Choose either OC or SST  
-
-    ./getOC -i VIIRSN -l L2 test.csv -u <earthdata-username> -p OC -w --box 60
-    
-For **VIIRSJ1**:  
-    Only OC available  
-
-    ./getOC -i VIIRSJ1 -l L2 test.csv -u <earthdata-username> -p OC -w --box 60
-    
-For **OLCI**:  
-    Only OC available  
-    Use either level L2 or L2_WFR for full resolution  
-    Use either level L1_ERR for low resolution  
-    
-    ./getOC -i OLCI -l L1 test.csv -u <creodias-username> -w --box 60
-    
-For **SLSTR**:  
-    Only SST available  
-    Use either level L2 or L2_WST (default; GHRSST recommendations) or L2_WCT for weighted combinations of brightness temperatures  
-    
-    ./getOC -i SLSTR -l L2 test.csv -u <creodias-username> -w --box 60
-
-For **MSI**:  
-    
-    ./getOC -i MSI -l L2A test.csv -u <creodias-username> -w --box 60
-
-For **GOCI**:  
-    
-    ./getOC -i GOCI -l L2 test.csv -u <creodias-username> -w --box 60
-    
-
-### Level 3
-At level 3 the worlds ocean is downloaded. getOC ignores the latitude and longitude in the input csv file. Usage:
-
-    ./getOC -i MODIS-Aqua -l <L3b|L3m> test.csv <earthdata-username> -p <product> -b <binning-period> --res 4km -w
-
-Examples:
-
-    python getOC -i MODIS-Aqua -l L3b test.csv <earthdata-username> -p POC -b DAY --res 4km -w
-    python getOC -i MODIS-Aqua -l L3m test.csv <earthdata-username> -p CHL -b 8D --res 9km -w
-    python getOC -i MODIS-Aqua -l L3m test.csv <earthdata-username> -p CHL -b MO --res 9km -w

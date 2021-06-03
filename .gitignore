@@ -110,3 +110,9 @@ ENV/
 
 # pyCharm
 .idea/
+
+# Project related
+examples/
+test/images/
+getOC_legacy.py
+credentials.ini
