@@ -299,12 +299,12 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
             imlistraw = [ x for x in imlistraw if level in x ]
         else: # if multiple images
             imlistraw = re.findall(r'title="(.*?)"\nwidth="70"', r.text)
-            if instrument == 'MODIS-Aqua' or instrument == 'MODIS-Terra' and level == 'L1A':
-                # add missing extension when multiple reuslts
-                imlistraw = [s + '.bz2' for s in imlistraw]
-                # remove duplicates
-                imlistraw = list(dict.fromkeys(imlistraw))
-
+            if level == 'L1A':
+                if instrument == 'MODIS-Aqua' or instrument == 'MODIS-Terra':
+                    # add missing extension when multiple reuslts
+                    imlistraw = [s + '.bz2' for s in imlistraw]
+                    # remove duplicates
+                    imlistraw = list(dict.fromkeys(imlistraw))
         # append VIIRS GEO file names at the end of the list
         if 'VIIRS' in instrument and level == 'L1A':
             imlistraw = imlistraw + [sub.replace('L1A', 'GEO-M') for sub in imlistraw]
