@@ -100,13 +100,11 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
             else:
                 timeliness = ''
             dattyp = instrument + '_' + level
-
             if dattyp in DATA_TYPE_ID:
                 sen = 'producttype:' + DATA_TYPE_ID[dattyp]
             else:
                 raise ValueError("level " + level + " not supported for " + instrument + " sensor")
             query_string = sen + '%20AND%20' + 'instrumentshortname:' + instrument + timeliness + '%20AND%20'
-
         elif access_platform == 'creodias':
             # https://finder.creodias.eu/resto/api2/collections/Sentinel2/search.json?instrument=MSI&productType=L2A&processingLevel=LEVEL2A
             # check which spatial resolution for SLSTR and OLCI, if not input choose default:
@@ -124,7 +122,6 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
                 raise ValueError("level " + level + " not supported for " + instrument + " sensor")
             else:
                 query_string = sat + '/search.json?instrument=' + INSTRUMENT_QUERY_ID[instrument] + '&productType=' + DATA_TYPE_ID[dattyp] + '&processingLevel=' + LEVEL_CREODIAS[level.split('_')[0]]
-
         elif access_platform == 'L1L2_browser':
             sen = '&sen=' + INSTRUMENT_QUERY_ID[instrument]
             sen_pre = INSTRUMENT_FILE_ID[instrument]
@@ -161,16 +158,13 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
             else:
                 raise ValueError("level not supported: '" + level + "'")
             query_string = '?sub=' + sub + sen + '&dnm=' + dnm + '&prm=' + prm
-
         elif access_platform == 'cmr':
             sen = SEARCH_CMR[instrument]
             if 'L1' in level:
                 query_string = '&short_name=' + sen + '_' + level[0:2]
             else:
                 query_string = '&short_name=' + sen + '_' + level + '_' + product
-
         return query_string
-
     else:
         raise ValueError("instrument not supported: " + instrument)
 
@@ -185,7 +179,6 @@ def format_dtlatlon_query(poi,access_platform):
         s = str(-90)
     else:
         s = str(poi['lat'] - options.bounding_box_sz / 60)
-
     lon_box = options.bounding_box_sz / 60 / (math.cos(poi['lat'] * math.pi / 180))
     if poi['lon'] - lon_box < -180:
         w = str(poi['lon'] - lon_box + 360)
@@ -195,7 +188,6 @@ def format_dtlatlon_query(poi,access_platform):
         e = str(poi['lon'] + lon_box - 360)
     else:
         e = str(poi['lon'] + lon_box)
-
     if access_platform == 'L1L2_browser':
         day = str((poi['dt'] - datetime(1970, 1, 1)).days)
         return w,s,e,n,day
@@ -219,7 +211,6 @@ def get_image_list_copernicus(pois, access_platform, username, password, query_s
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
     pois['prod_entity'] = [[] for _ in range(len(pois))] # only for copernicus, to check online status & metadata
-
     for i, poi in pois.iterrows():
         if verbose:
             print('[' + str(i + 1) + '/' + str(len(pois)) + ']   Querying ' + str(poi['id']) + ' ' +
@@ -231,7 +222,6 @@ def get_image_list_copernicus(pois, access_platform, username, password, query_s
             day_end.strftime("%Y-%m-%dT%H:%M:%S.000Z") + ']%20AND%20' + 'footprint:"Intersects(POLYGON((' + w + '%20' + s + ',' + e + '%20' + s + \
             ',' + e + '%20' + n + ',' + w + '%20' + n + ',' + w + '%20' + s + ')))"&rows=100'
         r = requests.get(query, auth=HTTPBasicAuth(username, password))
-
         # r = s.get(url_dwld[i], auth=(username, password), stream=True, timeout=30)
         if i == 0 and 'Full authentication is required to access this resource' in r.text:
             raise Error('Unable to login to Copernicus, check username/password')
@@ -245,7 +235,6 @@ def get_image_list_copernicus(pois, access_platform, username, password, query_s
         pois.at[i, 'image_names'] = [s + '.zip' for s in imlistraw]
         pois.at[i, 'url'] = url_list
         pois.at[i, 'prod_entity'] = prod_meta
-
     return pois
 
 def get_image_list_creodias(pois, access_platform, username, password, query_string, instrument, level='L1C'):
@@ -253,7 +242,6 @@ def get_image_list_creodias(pois, access_platform, username, password, query_str
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
     pois['prod_entity'] = [[] for _ in range(len(pois))] # only for copernicus, to check online status & metadata
-
     for i, poi in pois.iterrows():
         if verbose:
             print('[' + str(i + 1) + '/' + str(len(pois)) + ']   Querying ' + str(poi['id']) + ' ' +
@@ -268,13 +256,11 @@ def get_image_list_creodias(pois, access_platform, username, password, query_str
         imlistraw = re.findall(r'"parentIdentifier":null,"title":"(.*?)","description"', r.text)
         # extract url from response
         fid_list = re.findall(r'"download":{"url":"https:\\/\\/zipper.creodias.eu\\/download\\/(.*?)","mimeType"', r.text)
-
         # populate lists with image name and url
         # pois.at[i, 'image_names'] = [sub.replace('.SAFE', '') + '.zip' for sub in imlistraw]
         pois.at[i, 'image_names'] = [s + '.zip' for s in imlistraw]
         # pois.at[i, 'image_names'] = imlistraw
         pois.at[i, 'url'] = [URL_CREODIAS_GET_FILE + '/' + s + '?token=' for s in fid_list]
-
     return pois
 
 
@@ -283,7 +269,6 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
     pois['prod_entity'] = [[] for _ in range(len(pois))] # only for copernicus, to check online status & metadata
-
     for i, poi in pois.iterrows():
         if verbose:
             print('[' + str(i + 1) + '/' + str(len(pois)) + ']   Querying ' + str(poi['id']) + ' ' +
@@ -308,16 +293,12 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
         # append VIIRS GEO file names at the end of the list
         if 'VIIRS' in instrument and level == 'L1A':
             imlistraw = imlistraw + [sub.replace('L1A', 'GEO-M') for sub in imlistraw]
-
         # Delay next query (might get kicked by server otherwise)
         sleep(query_delay)
-
         # populate lists with image name and url
         pois.at[i, 'image_names'] = imlistraw
-
         # populate url list
         pois.at[i, 'url'] = [URL_GET_FILE_CGI + s for s in pois.at[i, 'image_names']]
-
     return pois
 
 
@@ -328,7 +309,6 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
     pois['prod_entity'] = [[] for _ in range(len(pois))] # only for copernicus, to check online status & metadata
-
     for i, poi in pois.iterrows():
         if verbose:
             print('[' + str(i + 1) + '/' + str(len(pois)) + ']   Querying ' + str(poi['id']) + ' ' +
@@ -356,7 +336,6 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
         # populate lists with image name and url
         pois.at[i, 'image_names'] = imlistraw
         pois.at[i, 'url'] = [URL_GET_FILE_CMR + s for s in imlistraw]
-
     return pois
 
 
@@ -506,29 +485,11 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
                 except requests.exceptions.ConnectionError:
                     print('Build https connection failed: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
-                except requests.exceptions.ProxyError:
-                    print('Proxy error: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
-                    handle.close()
-                except requests.exceptions.SSLError:
-                    print('SSL error: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
-                    handle.close()
                 except requests.exceptions.Timeout:
                     print('Request timed out: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
-                except requests.exceptions.ReadTimeout:
-                    print('Read timed out: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
-                    handle.close()
-                except requests.exceptions.ConnectTimeout:
-                    print('Connection timed out: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
-                    handle.close()
                 except requests.exceptions.RequestException:
                     print('Unknown error: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
-                    handle.close()
-                except requests.exceptions.InvalidURL:
-                    print('URL not valid: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
-                    handle.close()
-                except requests.exceptions.ChunkedEncodingError:
-                    print('The server declared chunked encoding but sent an invalid chunk: download failed, attempt [' + str(j) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except socket.timeout:
                     print('Connetion lost: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
@@ -548,7 +509,6 @@ def login_download(image_names, url_dwld, instrument, access_platform, username,
 
 if __name__ == "__main__":
     from optparse import OptionParser
-
     parser = OptionParser(usage="Usage: getOC.py [options] [filename]", version="getOC " + __version__)
     parser.add_option("-i", "--instrument", action="store", dest="instrument",
                       help="specify instrument, available options are: VIIRS, MODIS-Aqua, MODIS-Terra, OCTS, CZCS, MERIS, HICO, "
@@ -579,8 +539,6 @@ if __name__ == "__main__":
     parser.add_option("--box", "--bounding-box-size", action="store", dest="bounding_box_sz", type='float', default=60,
                       help="specify bounding box size in nautical miles")
     (options, args) = parser.parse_args()
-
-
     verbose = options.verbose
     if options.instrument is None:
         print(parser.usage)
@@ -590,7 +548,6 @@ if __name__ == "__main__":
         print(parser.usage)
         print('getOC.py: error: option -u, --username is required')
         sys.exit(-1)
-
     if len(args) < 1 and options.level:
         print(parser.usage)
         print('getOC.py: error: argument filename is required for Level GEO, L1A, or L2')
@@ -599,8 +556,6 @@ if __name__ == "__main__":
         print(parser.usage)
         print('getOC.py: error: too many arguments')
         sys.exit(-1)
-
-
     image_names = list()
     url_dwld = list()
     # Get list of images to download
@@ -612,9 +567,7 @@ if __name__ == "__main__":
                                       names=['id', 'dt', 'lat', 'lon', 'image_names', 'url', 'prod_entity'], parse_dates=[1])
             pois.dropna(subset=['image_names'], axis=0, inplace= True)
             points_of_interest = pois.copy()
-
             access_platform,password = get_platform(points_of_interest['dt'], options.instrument, options.level)
-
             # Parse image_names and url
             for index, record in pois.iterrows():
                 # Convert 'stringified' list to list
@@ -631,10 +584,8 @@ if __name__ == "__main__":
     else:
         # Parse csv file containing points of interest
         points_of_interest = read_csv(args[0], names=['id', 'dt', 'lat', 'lon'], parse_dates=[1])
-
         access_platform,password = get_platform(points_of_interest['dt'], options.instrument, options.level)
         query_string = set_query_string(access_platform, options.instrument, options.level, options.product)
-
         # if access_platform == 'copernicus': # DEPRECATED
         #     pois = get_image_list_copernicus(points_of_interest, access_platform, options.username, password,
         #                     query_string, options.instrument, options.level)
@@ -647,7 +598,6 @@ if __name__ == "__main__":
         elif access_platform == 'cmr':
             pois = get_image_list_cmr(points_of_interest, access_platform, query_string, options.instrument,
                             options.level, options.product)
-
         points_of_interest = pois.copy()
         # parse image_names
         prod_meta = list()
@@ -655,7 +605,6 @@ if __name__ == "__main__":
             image_names.extend(pois['image_names'])
             url_dwld.extend(pois['url'])
             prod_meta.extend(pois['prod_entity'])
-
     # Write image names
     if options.write_image_links:
         # Reformat image names & url
@@ -666,7 +615,6 @@ if __name__ == "__main__":
         points_of_interest.to_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
                                   options.level + '_' + options.product + '.csv',
                                   date_format='%Y/%m/%d %H:%M:%S', header=False, index=False, float_format='%.5f')
-
     # Download images from url list
     login_download(image_names, url_dwld, options.instrument, access_platform, options.username, password)
 
