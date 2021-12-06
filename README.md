@@ -23,15 +23,15 @@ this [Ocean Color Forum Post](https://oceancolor.gsfc.nasa.gov/forum/oceancolor/
 | Coastal Zone Color Scanner | CZCZ | 1978-1986 | global@1km | L1A, L2, L3m | OC |
 | Ocean Color Temperature Sensor | OCTS | 1996-1997 | global@700m | L1A, L2 | OC |
 | Sea Viewing Wide Field Scanner | SeaWiFS | 1997-2010@daily | global@1.1km | L1A, L2, L3m | OC |
-| Moderate Resolution Imaging Spectroradiometer Terra | MODIS-Terra@daily | 1999-now | global@0.25,0.5,1km | L1A, L2, L3m | OC |
-| Moderate Resolution Imaging Spectroradiometer Aqua | MODIS-Aqua@daily | 2002-now | global@0.25,0.5,1km | L1A, L2, L3m | OC, SST |
+| Moderate Resolution Imaging Spectroradiometer Terra | MODIS-Terra | 1999-now@daily | global@0.25,0.5,1km | L1A, L2, L3m | OC |
+| Moderate Resolution Imaging Spectroradiometer Aqua | MODIS-Aqua | 2002-now@daily | global@0.25,0.5,1km | L1A, L2, L3m | OC, SST |
 | MEdium Resolution Imaging Spectrometer (Reduced/Full Resolution) | MERIS-RR, MERIS-FR@daily | 2002-2012 | global@1km | L1, L2 | OC |
 | Geostationary Ocean Color Imager | GOCI | 2010-now@hourly | 36ºN 130ºE@500m | L1B, L2 | OC |
-| Visible Infrared Imaging Radiometer Suite (Suomi NPP) | VIIRSN@daily | 2011-now | global@1km | L1A, L2, L3m | OC, SST |
-| Visible Infrared Imaging Radiometer Suite (JPSS-1) | VIIRSJ1@daily | 2017-now | global@1km | L1A, L2, L3m | OC |
+| Visible Infrared Imaging Radiometer Suite (Suomi NPP) | VIIRSN | 2011-now@daily | global@1km | L1A, L2, L3m | OC, SST |
+| Visible Infrared Imaging Radiometer Suite (JPSS-1) | VIIRSJ1 | 2017-now@daily | global@1km | L1A, L2, L3m | OC |
 | MultiSpectral Instrument (Sentinel-2A/B) | MSI | 2015-now@5days | coastal@10,20,60m | L1C, L2A | OC |
 | Ocean and Land Colour Instrument (Sentinel-3A/B) | OLCI | 2016-now@daily | global@300m | L1_EFR, L1_ERR, L2_WFR, L2_WRR | OC |
-| Sea and Land Surface Temperature Radiometer (Sentinel-3A/B) | SLSTR@daily | 2016-now | global@0.5-1km| L1, L2_WST, L2_WCT| SST |
+| Sea and Land Surface Temperature Radiometer (Sentinel-3A/B) | SLSTR | 2016-now@daily | global@0.5-1km| L1, L2_WST, L2_WCT| SST |
 
 Resolutions are indicative for Level 1 and 2 data, Level 3 is only available at 4 or 9 km.
 
