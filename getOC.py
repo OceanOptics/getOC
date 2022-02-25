@@ -382,21 +382,17 @@ def request_platform(s, image_names, url_dwld, access_platform, username, passwo
         r = s.get(r1.url, auth=(username, password), stream=True, timeout=900, headers=headers)
         return r,login_key
 
-# def chunk_download(image_names, r):
-#     handle = open(image_names, "wb")
-#     for chunk in r.iter_content(chunk_size=512):
-#         if chunk:
-#             handle.write(chunk)
-#     handle.close()
-#     return None
 
-
-def login_download(image_names, url_dwld, instrument, access_platform, username, password):
+def login_download(img_names, urls, instrument, access_platform, username, password):
     # Login to Earth Data and Download image
-    if url_dwld is None and image_names is None:
+    if urls is None and img_names is None:
         if verbose:
             print('No image to download.')
         return None
+    image_names = []
+    url_dwld = []
+    [image_names.append(x) for x in img_names if x not in image_names]
+    [url_dwld.append(x) for x in urls if x not in url_dwld]
     if access_platform == 'creodias':
         # get login key to include it into url
         login_key = get_login_key(username, password)
