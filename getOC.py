@@ -111,12 +111,17 @@ class Platform:
         r = s.get(r1.url, auth=(self.username, self.password), stream=True, timeout=900, headers=headers)
         return r
 
-    def download_images(self, image_names, urls):
+    def download_images(self, img_names, url_dwld):
         # Login to Earth Data and Download image
-        if not urls and not image_names:
+        if not url_dwld and not img_names:
             if verbose:
                 print('No image to download.')
             return False
+        # remove duplicates
+        image_names = []
+        urls = []
+        [image_names.append(x) for x in img_names if x not in image_names]
+        [urls.append(x) for x in url_dwld if x not in urls]
         for image_name, url in zip(image_names, urls):
             if os.path.isfile(image_name):
                 if verbose:
@@ -339,17 +344,22 @@ class PlatformCREODIAS(Platform):
                       '\t- Invalid image name?')
         return r, access_token
 
-    def download_images(self, image_names, urls):
+    def download_images(self, img_names, url_dwld):
         """
         Login to platform and download each image if not on disk
         :param image_names:
         :param urls:
         :return:
         """
-        if not urls and not image_names:
+        if not url_dwld and not img_names:
             if verbose:
                 print('No image to download.')
             return False
+        # remove duplicates
+        image_names = []
+        urls = []
+        [image_names.append(x) for x in img_names if x not in image_names]
+        [urls.append(x) for x in url_dwld if x not in urls]
         access_token = self.get_access_token()
         # Loop through each image
         for image_name, url in zip(image_names, urls):
