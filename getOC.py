@@ -449,34 +449,9 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                             handle.close()
                             os.rename('tmp_' + image_names[i], image_names[i])
                             break
-                        # handle = open(image_names[i], "wb")
-                        # for chunk in r.iter_content(chunk_size=512):
-                        #     if chunk:
-                        #         handle.write(chunk)
-                        # handle.close()
-                        # break
-
-                        # if r.ok:
-                        #     if verbose:
-                        #         print('Downloading ' + image_names[i])
-                        #     handle = open(image_names[i], "wb")
-                        #     for chunk in r.iter_content(chunk_size=512):
-                        #         if chunk:
-                        #             handle.write(chunk)
-                        #     handle.close()
-                        #     break
-                        # else:
-                        #     print('Unable to download from EarthData.\n'
-                        #       '\t- Did you accept the End User License Agreement for this dataset ?\n'
-                        #       '\t- Check login/username\n'
-                        #       '\t- Invalid image name?')
-                        #     return None
                 except requests.exceptions.HTTPError as e:
-                    # Whoops it wasn't a 200
                     print('Requests error: ' + str(e) + '.\n'
                       '\tAttempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
-                # except TimeoutError:
-                #     print('Chunk download timeout, attempt [' + str(j) + '/' + MAX_RETRIES + 'reconnection ...')
                     handle.close()
                 except requests.exceptions.ConnectionError:
                     print('Build https connection failed: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
