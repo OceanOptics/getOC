@@ -117,11 +117,16 @@ class Platform:
             if verbose:
                 print('No image to download.')
             return False
-        # remove duplicates
+        # remove duplicates from image and url lists
         image_names = []
         urls = []
         [image_names.append(x) for x in img_names if x not in image_names]
         [urls.append(x) for x in url_dwld if x not in urls]
+        # remove empty string from image and url lists
+        image_names = list(filter(None, image_names))
+        urls = list(filter((URL_CREODIAS_GET_FILE + '/').__ne__, urls))
+        urls = list(filter((URL_GET_FILE_CMR).__ne__, urls))
+        urls = list(filter((URL_GET_FILE_CGI).__ne__, urls))
         for image_name, url in zip(image_names, urls):
             if os.path.isfile(image_name):
                 if verbose:
@@ -355,11 +360,16 @@ class PlatformCREODIAS(Platform):
             if verbose:
                 print('No image to download.')
             return False
-        # remove duplicates
+        # remove duplicates from image and url lists
         image_names = []
         urls = []
         [image_names.append(x) for x in img_names if x not in image_names]
         [urls.append(x) for x in url_dwld if x not in urls]
+        # remove empty string from image and url lists
+        image_names = list(filter(None, image_names))
+        urls = list(filter((URL_CREODIAS_GET_FILE + '/').__ne__, urls))
+        urls = list(filter((URL_GET_FILE_CMR).__ne__, urls))
+        urls = list(filter((URL_GET_FILE_CGI).__ne__, urls))
         access_token = self.get_access_token()
         # Loop through each image
         for image_name, url in zip(image_names, urls):
@@ -569,6 +579,9 @@ class PlatformOC(Platform):
             # append VIIRS GEO file names at the end of the list
             if 'VIIRS' in instrument and level == 'L1A':
                 imlistraw = imlistraw + [sub.replace('L1A', 'GEO-M') for sub in imlistraw]
+                imlistraw = imlistraw.replace(';;', ';')
+                if imlistraw[-1] == ';':
+                    imlistraw = imlistraw[0:-1]
             # Delay next query (might get kicked by server otherwise)
             sleep(query_delay)
             pois.at[i, 'image_names'] = imlistraw
