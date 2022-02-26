@@ -293,6 +293,9 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
         # append VIIRS GEO file names at the end of the list
         if 'VIIRS' in instrument and level == 'L1A':
             imlistraw = imlistraw + [sub.replace('L1A', 'GEO-M') for sub in imlistraw]
+            imlistraw = imlistraw.replace(';;', ';')
+            if imlistraw[-1] == ';':
+                imlistraw = imlistraw[0:-1]
         # Delay next query (might get kicked by server otherwise)
         sleep(query_delay)
         # populate lists with image name and url
@@ -389,10 +392,16 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
         if verbose:
             print('No image to download.')
         return None
+    # remove duplicate from image and url lists
     image_names = []
     url_dwld = []
     [image_names.append(x) for x in img_names if x not in image_names]
     [url_dwld.append(x) for x in urls if x not in url_dwld]
+    # remove empty string from image and url lists
+    image_names = list(filter(None, image_names))
+    url_dwld = list(filter((URL_CREODIAS_GET_FILE + '/').__ne__, url_dwld))
+    url_dwld = list(filter((URL_GET_FILE_CMR).__ne__, url_dwld))
+    url_dwld = list(filter((URL_GET_FILE_CGI).__ne__, url_dwld))
     if access_platform == 'creodias':
         # get login key to include it into url
         login_key = get_login_key(username, password)
@@ -404,7 +413,7 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
             if verbose:
                 print('Skip ' + image_names[i])
         else:
-            MAX_RETRIES = 3
+            MAX_RETRIES = 15
             WAIT_SECONDS = 120
             for j in range(MAX_RETRIES):
                 try:
