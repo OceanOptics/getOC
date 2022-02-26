@@ -164,6 +164,9 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
                 query_string = '&short_name=' + sen + '_' + level[0:2]
             else:
                 query_string = '&short_name=' + sen + '_' + level + '_' + product
+        else:
+            print('Error: plateform not recognized')
+            sys.exit(-1)
         return query_string
     else:
         raise ValueError("instrument not supported: " + instrument)
@@ -578,6 +581,9 @@ if __name__ == "__main__":
         elif access_platform == 'cmr':
             pois = get_image_list_cmr(points_of_interest, access_platform, query_string, options.instrument,
                             options.level, options.product)
+        else:
+            print('Error: plateform not recognized')
+            sys.exit(-1)
         points_of_interest = pois.copy()
         # parse image_names
         prod_meta = list()
