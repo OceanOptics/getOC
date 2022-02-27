@@ -463,19 +463,19 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                             break
                 except requests.exceptions.HTTPError as e:
                     print('Requests error: ' + str(e) + '.\n'
-                      '\tAttempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
+                      '\tAttempt [' + str(j+1) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.ConnectionError:
-                    print('Build https connection failed: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
+                    print('Build https connection failed: download failed, attempt [' + str(j+1) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.Timeout:
-                    print('Request timed out: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
+                    print('Request timed out: download failed, attempt [' + str(j+1) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except requests.exceptions.RequestException:
-                    print('Unknown error: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
+                    print('Unknown error: download failed, attempt [' + str(j+1) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 except socket.timeout:
-                    print('Connetion lost: download failed, attempt [' + str(j+2) + '/' + str(MAX_RETRIES) + '] reconnection ...')
+                    print('Connetion lost: download failed, attempt [' + str(j+1) + '/' + str(MAX_RETRIES) + '] reconnection ...')
                     handle.close()
                 if j+2 == MAX_RETRIES:
                     return None
