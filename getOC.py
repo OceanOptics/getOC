@@ -253,7 +253,7 @@ def sel_most_recent_olci(imlistraw, fid_list):
 
 def find_most_recent_olci(imlistraw):
     ref = imlistraw
-    ref = [x[:-52] for x in ref]
+    ref = [x[0:29] for x in ref]
     x = np.array(ref)
     uref = np.unique(x)
     todelete = []
@@ -443,6 +443,7 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
             print('No image to download.')
         return None
     # remove duplicate from image and url lists
+    print('Removing duplicates from %s image list' % instrument)
     if instrument == 'OLCI':
         image_names, url_dwld = sel_most_recent_olci(img_names, urls)
     else:
