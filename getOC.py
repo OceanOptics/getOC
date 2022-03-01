@@ -17,6 +17,7 @@ import re
 import os
 from time import sleep
 from pandas import DataFrame, read_csv
+import numpy as np
 import socket
 import math
 # import timeout_decorator
@@ -240,7 +241,52 @@ def get_image_list_copernicus(pois, access_platform, username, password, query_s
         pois.at[i, 'prod_entity'] = prod_meta
     return pois
 
-def get_image_list_creodias(pois, access_platform, username, password, query_string, instrument, level='L1C'):
+
+def sel_most_recent_olci(imlistraw, fid_list):
+    sel_s3 = find_most_recent_olci(imlistraw)
+    sel_fid = []
+    for i in range(len(imlistraw)):
+        if imlistraw[i] in sel_s3:
+            sel_fid.append(fid_list[i])
+    return sel_s3, sel_fid
+
+
+def find_most_recent_olci(imlistraw):
+    ref = imlistraw
+    ref = [x[:-52] for x in ref]
+    x = np.array(ref)
+    uref = np.unique(x)
+    todelete = []
+    for singlref in uref:
+        str_match = [s for s in imlistraw if singlref in s]
+        NR_match = [s for s in str_match if '_NR_' in s]
+        NT_match = [s for s in str_match if '_NT_' in s]
+        O_match = [s for s in str_match if '_O_' in s]
+        R_match = [s for s in str_match if '_R_' in s]
+        LN1_match = [s for s in str_match if '_LN1_' in s]
+        # LN2_match = [s for s in str_match if '_LN2_' in s]
+        MAR_match = [s for s in str_match if '_MAR_' in s]
+        if len(str_match) > 1:
+            # select reprocessed over operational
+            if len(O_match) > 0 and len(R_match) > 0:
+                for O_img in O_match:
+                    todelete.append(O_img)
+            elif len(NR_match) > 0:
+                # select no time limit over near real time
+                if len(NR_match) > 0 and len(NT_match) > 0:
+                    for NR_img in NR_match:
+                        todelete.append(NR_img)
+                elif len(NT_match) > 1:
+                    # select no time limit over near real time
+                    if len(MAR_match) > 0 and len(LN1_match) > 0:
+                        for MAR_img in NR_match:
+                            todelete.append(MAR_img)
+            for todel in todelete:
+                imlistraw = list(filter((todel).__ne__, imlistraw))
+    return imlistraw
+
+
+def get_image_list_creodias(pois, access_platform, query_string, instrument, level='L1C'):  # username, password,
     # Add column to points of interest data frame
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
@@ -259,11 +305,12 @@ def get_image_list_creodias(pois, access_platform, username, password, query_str
         imlistraw = re.findall(r'"parentIdentifier":null,"title":"(.*?)","description"', r.text)
         # extract url from response
         fid_list = re.findall(r'"download":{"url":"https:\\/\\/zipper.creodias.eu\\/download\\/(.*?)","mimeType"', r.text)
+        sel_s3, sel_fid = sel_most_recent_olci(imlistraw, fid_list)
         # populate lists with image name and url
         # pois.at[i, 'image_names'] = [sub.replace('.SAFE', '') + '.zip' for sub in imlistraw]
-        pois.at[i, 'image_names'] = [s + '.zip' for s in imlistraw]
+        pois.at[i, 'image_names'] = [s + '.zip' for s in sel_s3]
         # pois.at[i, 'image_names'] = imlistraw
-        pois.at[i, 'url'] = [URL_CREODIAS_GET_FILE + '/' + s + '?token=' for s in fid_list]
+        pois.at[i, 'url'] = [URL_CREODIAS_GET_FILE + '/' + s + '?token=' for s in sel_fid]
     return pois
 
 
@@ -289,7 +336,7 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
             imlistraw = re.findall(r'title="(.*?)"\nwidth="70"', r.text)
             if level == 'L1A':
                 if instrument == 'MODIS-Aqua' or instrument == 'MODIS-Terra':
-                    # add missing extension when multiple reuslts
+                    # add missing extension when multiple results
                     imlistraw = [s + '.bz2' for s in imlistraw]
                     # remove duplicates
                     imlistraw = list(dict.fromkeys(imlistraw))
@@ -396,15 +443,18 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
             print('No image to download.')
         return None
     # remove duplicate from image and url lists
-    image_names = []
-    url_dwld = []
-    [image_names.append(x) for x in img_names if x not in image_names]
-    [url_dwld.append(x) for x in urls if x not in url_dwld]
-    # remove empty string from image and url lists
-    image_names = list(filter(None, image_names))
-    url_dwld = list(filter((URL_CREODIAS_GET_FILE + '/').__ne__, url_dwld))
-    url_dwld = list(filter((URL_GET_FILE_CMR).__ne__, url_dwld))
-    url_dwld = list(filter((URL_GET_FILE_CGI).__ne__, url_dwld))
+    if instrument == 'OLCI':
+        image_names, url_dwld = sel_most_recent_olci(img_names, urls)
+    else:
+        image_names = []
+        url_dwld = []
+        [image_names.append(x) for x in img_names if x not in image_names]
+        [url_dwld.append(x) for x in urls if x not in url_dwld]
+        # remove empty string from image and url lists
+        image_names = list(filter(None, image_names))
+        url_dwld = list(filter((URL_CREODIAS_GET_FILE + '/').__ne__, url_dwld))
+        url_dwld = list(filter((URL_GET_FILE_CMR).__ne__, url_dwld))
+        url_dwld = list(filter((URL_GET_FILE_CGI).__ne__, url_dwld))
     if access_platform == 'creodias':
         # get login key to include it into url
         login_key = get_login_key(username, password)
@@ -573,7 +623,7 @@ if __name__ == "__main__":
         #     pois = get_image_list_copernicus(points_of_interest, access_platform, options.username, password,
         #                     query_string, options.instrument, options.level)
         if access_platform == 'creodias':
-            pois = get_image_list_creodias(points_of_interest, access_platform, options.username, password,
+            pois = get_image_list_creodias(points_of_interest, access_platform, #options.username, password,
                             query_string, options.instrument, options.level)
         elif access_platform == 'L1L2_browser':
             pois = get_image_list_l12browser(points_of_interest, access_platform, query_string, options.instrument,
