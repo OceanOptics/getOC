@@ -445,17 +445,19 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
     # remove duplicate from image and url lists
     print('Removing duplicates from %s image list' % instrument)
     if instrument == 'OLCI':
-        image_names, url_dwld = sel_most_recent_olci(img_names, urls)
-    else:
-        image_names = []
-        url_dwld = []
-        [image_names.append(x) for x in img_names if x not in image_names]
-        [url_dwld.append(x) for x in urls if x not in url_dwld]
-        # remove empty string from image and url lists
-        image_names = list(filter(None, image_names))
-        url_dwld = list(filter((URL_CREODIAS_GET_FILE + '/').__ne__, url_dwld))
-        url_dwld = list(filter((URL_GET_FILE_CMR).__ne__, url_dwld))
-        url_dwld = list(filter((URL_GET_FILE_CGI).__ne__, url_dwld))
+        # select the most recent version of all images
+        img_names, urls = sel_most_recent_olci(img_names, urls)
+    image_names = []
+    url_dwld = []
+    for x in range(len(img_names)):
+        if img_names[x] not in image_names:
+            image_names.append(img_names[x])
+            url_dwld.append(urls[x])
+    # remove empty string from image and url lists
+    image_names = list(filter(None, image_names))
+    url_dwld = list(filter((URL_CREODIAS_GET_FILE + '/').__ne__, url_dwld))
+    url_dwld = list(filter((URL_GET_FILE_CMR).__ne__, url_dwld))
+    url_dwld = list(filter((URL_GET_FILE_CGI).__ne__, url_dwld))
     if access_platform == 'creodias':
         # get login key to include it into url
         login_key = get_login_key(username, password)
@@ -488,11 +490,13 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                                     for chunk in r.iter_content(chunk_size=16*1024):
                                         if chunk:
                                             handle.write(chunk)
-                                            if verbose:
+                                            if verbose and os.path.isfile('tmp_' + image_names[i]):
                                                 biden_president = round(float(os.stat('tmp_' + image_names[i]).st_size)/expected_length*100,-1)
                                                 if biden_president > trump_shutup:
                                                     sys.stdout.write('\rDownloading ' + image_names[i] + '      ' + str(biden_president) + '%')
                                                     trump_shutup = biden_president
+                                            else:
+                                                print('Warning: temporary file tmp_' + image_names[i] + ' not found')
                                 if handle.closed:
                                     handle = open('tmp_' + image_names[i], "ab")
                                 handle.flush()
