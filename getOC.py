@@ -394,7 +394,7 @@ class PlatformCREODIAS(Platform):
                                     for chunk in r.iter_content(chunk_size=16 * 1024):
                                         if chunk:
                                             handle.write(chunk)
-                                            if verbose:
+                                            if verbose and os.path.isfile('tmp_' + image_names[i]):
                                                 biden_president = round(
                                                     float(os.stat('tmp_' + image_name).st_size) / expected_length * 100,
                                                     -1)
@@ -402,6 +402,8 @@ class PlatformCREODIAS(Platform):
                                                     sys.stdout.write(
                                                         f"\rDownloading {image_name}\t\t{biden_president:.0f}%")
                                                     trump_shutup = biden_president
+                                            else:
+                                                print('Warning: temporary file tmp_' + image_names[i] + ' not found')
                                 if handle.closed:
                                     handle = open('tmp_' + image_name, "ab")
                                 handle.flush()
