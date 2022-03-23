@@ -190,10 +190,10 @@ For **GOCI**:
 ### Level 3
 At level 3 the worlds ocean is downloaded. getOC ignores the latitude and longitude in the input csv file. Usage:
 
-    ./getOC -i MODIS-Aqua -l <L3b|L3m> test.csv <earthdata-username> -p <product> -b <binning-period> --res 4km -w
+    ./getOC -i MODIS-Aqua -l <L3b|L3m> test.csv -u <earthdata-username> -p <product> -b <binning-period> --res 4km -w
 
 Examples:
 
-    python getOC -i MODIS-Aqua -l L3b test.csv <earthdata-username> -p POC -b DAY --res 4km -w
-    python getOC -i MODIS-Aqua -l L3m test.csv <earthdata-username> -p CHL -b 8D --res 9km -w
-    python getOC -i MODIS-Aqua -l L3m test.csv <earthdata-username> -p CHL -b MO --res 9km -w
+    python getOC -i MODIS-Aqua -l L3b test.csv -u <earthdata-username> -p POC -b DAY --res 4km -w
+    python getOC -i MODIS-Aqua -l L3m test.csv -u <earthdata-username> -p CHL -b 8D --res 9km -w
+    python getOC -i MODIS-Aqua -l L3m test.csv -u <earthdata-username> -p CHL -b MO --res 9km -w
