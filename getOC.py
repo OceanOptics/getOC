@@ -344,8 +344,9 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
         if 'VIIRS' in instrument and level == 'L1A':
             imlistraw = imlistraw + [sub.replace('L1A', 'GEO-M') for sub in imlistraw]
             imlistraw = [sub.replace(';;', ';') for sub in imlistraw]
-            if imlistraw[-1] == ';':
-                imlistraw = imlistraw[0:-1]
+            if len(imlistraw) > 0:
+                if imlistraw[-1] == ';':
+                    imlistraw = imlistraw[0:-1]
         # Delay next query (might get kicked by server otherwise)
         sleep(query_delay)
         # populate lists with image name and url
