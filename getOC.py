@@ -332,7 +332,7 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
         if 'href="https://oceandata.sci.gsfc.nasa.gov/ob/getfile/' in r.text: # if one image
             imlistraw = re.findall(r'href="https://oceandata.sci.gsfc.nasa.gov/ob/getfile/(.*?)">', r.text)
             imlistraw = [ x for x in imlistraw if level in x ]
-        else: # if multiple images
+        else:  # if multiple images
             imlistraw = re.findall(r'title="(.*?)"\nwidth="70"', r.text)
             if level == 'L1A':
                 if instrument == 'MODIS-Aqua' or instrument == 'MODIS-Terra':
@@ -343,8 +343,8 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
         # append VIIRS GEO file names at the end of the list
         if 'VIIRS' in instrument and level == 'L1A':
             imlistraw = imlistraw + [sub.replace('L1A', 'GEO-M') for sub in imlistraw]
-            imlistraw = [sub.replace(';;', ';') for sub in imlistraw]
             if len(imlistraw) > 0:
+                imlistraw = [sub.replace(';;', ';') for sub in imlistraw]
                 if imlistraw[-1] == ';':
                     imlistraw = imlistraw[0:-1]
         # Delay next query (might get kicked by server otherwise)
