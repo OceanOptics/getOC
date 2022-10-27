@@ -78,7 +78,7 @@ def get_platform(dates, instrument, level):
     if instrument == 'MSI' or instrument == 'SLSTR' or instrument == 'OLCI':
         access_platf = 'creodias'
         pwd = getpass(prompt='Creodias Password: ', stream=None)
-    elif level == 'L0' or 'L1' in level and instrument != 'VIIRSJ1' or level == 'GEO' or instrument == 'MERIS' or \
+    elif 'VIIRS' not in instrument and (level == 'L0' or 'L1' in level or level == 'GEO') or instrument == 'MERIS' or \
             instrument == 'HICO' or any(delta_today < timedelta(hours=48)):
         access_platf = 'L1L2_browser'
         pwd = getpass(prompt='EarthData Password: ', stream=None)
@@ -348,12 +348,8 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
                     # remove duplicates
                     imlistraw = list(dict.fromkeys(imlistraw))
         # append VIIRS GEO file names at the end of the list
-        if instrument == 'VIIRSN':
-            geo_suffix = 'GEO-M'
-        elif instrument == 'VIIRSJ1':
-            geo_suffix = 'GEO'
         if 'VIIRS' in instrument and level == 'L1A':
-            imlistraw = imlistraw + [sub.replace('L1A', geo_suffix) for sub in imlistraw]
+            imlistraw = imlistraw + [sub.replace('L1A', 'GEO') for sub in imlistraw]
             if len(imlistraw) > 0:
                 imlistraw = [sub.replace(';;', ';') for sub in imlistraw]
                 if imlistraw[-1] == ';':
@@ -389,8 +385,8 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
         r = requests.get(query)
         # extract image name from response
         imlistraw = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
-        # run second query for GEO files if VIIRSJ1 and L1A
-        if instrument == 'VIIRSJ1' and level == 'L1A' or level == 'L1':
+        # run second query for GEO files if VIIRS and L1A
+        if 'VIIRS' in instrument and level == 'L1A' or level == 'L1':
             query = URL_CMR + query_string.replace('_L1', '_L1_GEO') + '&bounding_box=' + w + ',' +  s + ',' + e + ',' + n + \
                     '&temporal=' + day_st.strftime("%Y-%m-%dT%H:%M:%SZ,") + day_end.strftime("%Y-%m-%dT%H:%M:%SZ") + \
                     '&page_size=2000&page_num=1'
