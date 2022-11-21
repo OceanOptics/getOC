@@ -73,7 +73,7 @@ Level 3 'L3b' and 'L3m' download are only available for NASA satellites
 - **`-p`** **product**  
     Specify the product type to download:  
      - **`OC`**    [default]  
-     - **`IOP`**    [Deprecated]  
+     - **`IOP`**  
      - **`SST`**  
 
 **`--box`** **bounding box**  
