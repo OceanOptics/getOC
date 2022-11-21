@@ -42,7 +42,7 @@ URL_CREODIAS_GET_FILE = 'https://zipper.creodias.eu/download'
 # https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/JPSS1_VIIRS.20220602T132400.GEO-M.nc
 
 # Documentation of Ocean Color Data Format Specification
-#   https://oceancolor.gsfc.nasa.gov/products/
+# https://oceancolor.gsfc.nasa.gov/products/
 INSTRUMENT_FILE_ID = {'SeaWiFS': 'S', 'MODIS-Aqua': 'A', 'MODIS-Terra': 'T', 'OCTS': 'O', 'CZCS': 'C', 'GOCI': 'G',
                       'MERIS': 'M', 'VIIRSN': 'V', 'VIIRSJ1': 'V', 'HICO': 'H', 'OLCI': 'Sentinel3',
                       'SLSTR': 'Sentinel3', 'MSI': 'Sentinel2'}
@@ -126,7 +126,8 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
             if dattyp not in DATA_TYPE_ID:
                 raise ValueError("level " + level + " not supported for " + instrument + " sensor")
             else:
-                query_str = sat + '/search.json?instrument=' + INSTRUMENT_QUERY_ID[instrument] + '&productType=' + DATA_TYPE_ID[dattyp] + '&processingLevel=' + LEVEL_CREODIAS[level.split('_')[0]]
+                query_str = sat + '/search.json?instrument=' + INSTRUMENT_QUERY_ID[instrument] + '&productType=' + \
+                            DATA_TYPE_ID[dattyp] + '&processingLevel=' + LEVEL_CREODIAS[level.split('_')[0]]
         elif access_platform == 'L1L2_browser':
             sen = '&sen=' + INSTRUMENT_QUERY_ID[instrument]
             sen_pre = INSTRUMENT_FILE_ID[instrument]
@@ -222,7 +223,8 @@ def get_image_list_copernicus(pois, access_platform, username, password, query_s
     for i, poi in pois.iterrows():
         if verbose:
             print('[' + str(i + 1) + '/' + str(len(pois)) + ']   Querying ' + str(poi['id']) + ' ' +
-                  instrument + ' ' + level + ' on Copernicus' + '    ' + str(poi['dt']) + '    ' + "%.5f" % poi['lat'] + '  ' + "%.5f" % poi['lon'])
+                  instrument + ' ' + level + ' on Copernicus' + '    ' + str(poi['dt']) + '    ' +
+                  "%.5f" % poi['lat'] + '  ' + "%.5f" % poi['lon'])
         # get polygon around poi and date
         w, s, e, n, day_st, day_end = format_dtlatlon_query(poi, access_platform)
         # Build Query
@@ -299,25 +301,26 @@ def get_image_list_creodias(pois, access_platform, query_string, instrument, lev
     pois['prod_entity'] = [[] for _ in range(len(pois))]  # only for copernicus, to check online status & metadata
     for i, poi in pois.iterrows():
         if verbose:
-            print('[' + str(i + 1) + '/' + str(len(pois)) + ']   Querying ' + str(poi['id']) + ' ' +
-                  instrument + ' ' + level + ' on Creodias' + '    ' + str(poi['dt']) + '    ' + "%.5f" % poi['lat']
-                  + '  ' + "%.5f" % poi['lon'])
+            print('[%i/%i]   Querying %s %s %s on Creodias    %s    %.5f  %.5f' %
+                  (i + 1, len(pois), poi['id'], instrument, level, poi['dt'], poi['lat'], poi['lon']))
         # get polygon around poi and date
         w, s, e, n, day_st, day_end = format_dtlatlon_query(poi, access_platform)
         # Build Query
-        query = URL_SEARCH_CREODIAS + query_string + '&startDate=' + day_st.strftime("%Y-%m-%d") + \
-            '&completionDate=' + day_end.strftime("%Y-%m-%d") + '&box=' + w + ',' + s + ',' + e + ',' + n
+        query = '%s%s&startDate=%s&completionDate=%s&box=%s,%s,%s,%s' % \
+                (URL_SEARCH_CREODIAS, query_string, day_st.strftime("%Y-%m-%d"),
+                 day_end.strftime("%Y-%m-%d"), w, s, e, n)
         r = requests.get(query)
         # extract image name from response
         imlistraw = re.findall(r'"parentIdentifier":null,"title":"(.*?)","description"', r.text)
         # extract url from response
-        fid_list = re.findall(r'"download":{"url":"https:\\/\\/zipper.creodias.eu\\/download\\/(.*?)","mimeType"', r.text)
+        fid_list = re.findall(r'"download":{"url":"https:\\/\\/zipper.creodias.eu\\/download\\/(.*?)","mimeType"',
+                              r.text)
         sel_s3, sel_fid = sel_most_recent_olci(imlistraw, fid_list)
         # populate lists with image name and url
         # pois.at[i, 'image_names'] = [sub.replace('.SAFE', '') + '.zip' for sub in imlistraw]
         pois.at[i, 'image_names'] = [s + '.zip' for s in sel_s3]
         # pois.at[i, 'image_names'] = imlistraw
-        pois.at[i, 'url'] = [URL_CREODIAS_GET_FILE + '/' + s + '?token=' for s in sel_fid]
+        pois.at[i, 'url'] = ['%s/%s?token=' % (URL_CREODIAS_GET_FILE, s) for s in sel_fid]
     return pois
 
 
@@ -328,12 +331,12 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
     pois['prod_entity'] = [[] for _ in range(len(pois))] # only for copernicus, to check online status & metadata
     for i, poi in pois.iterrows():
         if verbose:
-            print('[' + str(i + 1) + '/' + str(len(pois)) + ']   Querying ' + str(poi['id']) + ' ' +
-                  instrument + ' ' + level + ' on L1L2_browser' + '    ' + str(poi['dt']) + '    ' + "%.5f" % poi['lat'] + '  ' + "%.5f" % poi['lon'])
+            print('[%i/%i]   Querying %s %s %s %s on L1L2_browser    %s    %.5f  %.5f' %
+                  (i+1, len(pois), poi['id'], instrument, level, product, poi['dt'], poi['lat'], poi['lon']))
         # get polygon around poi and date
         w, s, e, n, day = format_dtlatlon_query(poi, access_platform)
         # Build Query
-        query = URL_L12BROWSER + query_string + '&per=DAY&day=' + day + '&n=' + n + '&s=' + s + '&w=' + w + '&e=' + e
+        query = '%s%s&per=DAY&day=%s&n=%s&s=%s&w=%s&e=%s' % (URL_L12BROWSER, query_string, day, n, s, w, e)
         r = requests.get(query)
         # extract image name from response
         if 'href="https://oceandata.sci.gsfc.nasa.gov/ob/getfile/' in r.text: # if one image
@@ -359,7 +362,7 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
         # populate lists with image name and url
         pois.at[i, 'image_names'] = imlistraw
         # populate url list
-        pois.at[i, 'url'] = [URL_GET_FILE_CGI + s for s in pois.at[i, 'image_names']]
+        pois.at[i, 'url'] = ['%s%s' % (URL_GET_FILE_CGI, s) for s in pois.at[i, 'image_names']]
     return pois
 
 
@@ -373,47 +376,50 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
     pois['prod_entity'] = [[] for _ in range(len(pois))]  # only for copernicus, to check online status & metadata
     for i, poi in pois.iterrows():
         if verbose:
-            print('[' + str(i + 1) + '/' + str(len(pois)) + ']   Querying ' + str(poi['id']) + ' ' +
-                  instrument + ' ' + level + ' on CMR' + '    ' + str(poi['dt']) + '    ' + "%.5f" % poi['lat'] +
-                  '  ' + "%.5f" % poi['lon'])
+            print('[%i/%i]   Querying %s %s %s %s on CMR    %s    %.5f  %.5f' %
+                  (i+1, len(pois), poi['id'], instrument, level, product, poi['dt'], poi['lat'], poi['lon']))
         # get polygon around poi and date
         w, s, e, n, day_st, day_end = format_dtlatlon_query(poi, access_platform)
         # Build Query
-        query = URL_CMR + query_string + '&bounding_box=' + w + ',' + s + ',' + e + ',' + n + \
-                '&temporal=' + day_st.strftime("%Y-%m-%dT%H:%M:%SZ,") + day_end.strftime("%Y-%m-%dT%H:%M:%SZ") + \
-                '&page_size=2000&page_num=1'
+        query = '%s%s&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
+                (URL_CMR, query_string, w, s, e, n, day_st.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                 day_end.strftime("%Y-%m-%dT%H:%M:%SZ"))
         r = requests.get(query)
         # extract image name from response
         imlistraw = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
         # run second query for GEO files if VIIRS and L1A
         if 'VIIRS' in instrument and level == 'L1A' or level == 'L1':
-            query = URL_CMR + query_string.replace('_L1', '_L1_GEO') + '&bounding_box=' + w + ',' +  s + ',' + e + ',' + n + \
-                    '&temporal=' + day_st.strftime("%Y-%m-%dT%H:%M:%SZ,") + day_end.strftime("%Y-%m-%dT%H:%M:%SZ") + \
-                    '&page_size=2000&page_num=1'
+            query = '%s%s_NRT&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
+                    (URL_CMR, query_string.replace('_L1', '_L1_GEO'), w, s, e, n, day_st.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                     day_end.strftime("%Y-%m-%dT%H:%M:%SZ"))
             r = requests.get(query)
             # extract image name from response
             imlistraw = imlistraw + re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
         # run second query for NRT files if date_st or date_end more recent than 60 days
         if datetime.utcnow() - day_st < timedelta(days=60) or datetime.utcnow() - day_end < timedelta(days=60):
-            query = URL_CMR + query_string + '_NRT&bounding_box=' + w + ',' + s + ',' + e + ',' + n + \
-                    '&temporal=' + day_st.strftime("%Y-%m-%dT%H:%M:%SZ,") + day_end.strftime("%Y-%m-%dT%H:%M:%SZ") + \
-                    '&page_size=2000&page_num=1'
+            query = '%s%s_NRT&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
+                    (URL_CMR, query_string, w, s, e, n, day_st.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                     day_end.strftime("%Y-%m-%dT%H:%M:%SZ"))
             r = requests.get(query)
             # extract image name from response
             imlistraw = imlistraw + re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
         if level == 'L3m' or product == 'L3b':
             imlistraw = [x for x in imlistraw if options.sresol in x and options.binning_period in x]
-        # Reformat VIIRS image name
-        if instrument == 'VIIRSN' and product == 'SST':
+        # Keep only good image name image name
+        if instrument == 'VIIRSN':
             imlistraw = [x for x in imlistraw if "SNPP_VIIRS." in x]
+        if instrument == 'VIIRSJ1':
+            imlistraw = [x for x in imlistraw if "JPSS1_VIIRS." in x]
+        if 'MODIS' in instrument:
+            imlistraw = [x for x in imlistraw if "MODIS" in x]
         # populate lists with image name and url
         pois.at[i, 'image_names'] = imlistraw
-        pois.at[i, 'url'] = [URL_GET_FILE_CMR + s for s in imlistraw]
+        pois.at[i, 'url'] = ['%s%s' % (URL_GET_FILE_CMR, s) for s in imlistraw]
     return pois
 
 
 def request_platform(s, image_names, url_dwld, access_platform, username, password, login_key):
-    if access_platform == 'copernicus': # DEPRECATED
+    if access_platform == 'copernicus':  # DEPRECATED
         login_key = None
         headers = {'Range':'bytes=' + str(os.stat(image_names).st_size) + '-'}
         r = s.get(url_dwld, auth=(username, password), stream=True, timeout=900, headers=headers)
@@ -447,7 +453,8 @@ def request_platform(s, image_names, url_dwld, access_platform, username, passwo
         return r, login_key
     else:
         # modify header to hide requests query and mimic web browser
-        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',}
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, '
+                                 'like Gecko) Chrome/68.0.3440.106 Safari/537.36',}
         login_key = None
         s.auth = (username, password)
         # headers = {'Range':'bytes=' + str(os.stat(image_names).st_size) + '-'}
@@ -489,20 +496,23 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
             if verbose:
                 print('Skip ' + image_names[i])
         else:
-            MAX_RETRIES = 5
-            WAIT_SECONDS = 120
-            for j in range(MAX_RETRIES):
+            max_retries = 5
+            wait_seconds = 120
+            for j in range(max_retries):
                 try:
                     # Open session
                     with requests.Session() as s:
                         handle = open('tmp_' + image_names[i], "wb")
-                        r,login_key = request_platform(s, 'tmp_' + image_names[i], url_dwld[i], access_platform, username, password, login_key)
+                        r, login_key = request_platform(s, 'tmp_' + image_names[i], url_dwld[i], access_platform,
+                                                        username, password, login_key)
                         sleep(5)
                         r.raise_for_status()
                         if access_platform == 'creodias':
                             expected_length = int(r.headers.get('Content-Length'))
-                            while os.stat('tmp_' + image_names[i]).st_size < expected_length:  # complete the file even if connection is cut while downloading and file is incomplete
-                                r,login_key = request_platform(s, 'tmp_' + image_names[i], url_dwld[i], access_platform, username, password, login_key)
+                            # complete the file even if connection is cut while downloading and file is incomplete
+                            while os.stat('tmp_' + image_names[i]).st_size < expected_length:
+                                r, login_key = request_platform(s, 'tmp_' + image_names[i], url_dwld[i],
+                                                                access_platform, username, password, login_key)
                                 sleep(5)
                                 r.raise_for_status()
                                 trump_shutup = 0
@@ -511,9 +521,11 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                                         if chunk:
                                             handle.write(chunk)
                                             if verbose and os.path.isfile('tmp_' + image_names[i]):
-                                                biden_president = round(float(os.stat('tmp_' + image_names[i]).st_size)/expected_length*100,-1)
+                                                biden_president = round(float(
+                                                    os.stat('tmp_' + image_names[i]).st_size)/expected_length*100, -1)
                                                 if biden_president > trump_shutup:
-                                                    sys.stdout.write('\rDownloading ' + image_names[i] + '      ' + str(biden_president) + '%')
+                                                    sys.stdout.write('\rDownloading ' + image_names[i] +
+                                                                     '      ' + str(biden_president) + '%')
                                                     trump_shutup = biden_president
                                             else:
                                                 print('Warning: temporary file tmp_' + image_names[i] + ' not found')
@@ -539,31 +551,33 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                             os.rename('tmp_' + image_names[i], image_names[i])
                             break
                 except requests.exceptions.HTTPError as e:
-                    print('Requests error: %s. Attempt [%i/%i] reconnection ...' % (e, j+1, MAX_RETRIES))
+                    print('Requests error: %s. Attempt [%i/%i] reconnection ...' % (e, j+1, max_retries))
                     handle.close()
                 except requests.exceptions.ConnectionError:
                     print('Build https connection failed: download failed, attempt [%i/%i] reconnection ...' %
-                          (j+1, MAX_RETRIES))
+                          (j+1, max_retries))
                     handle.close()
                 except requests.exceptions.Timeout:
-                    print('Request timed out: download failed, attempt [%i/%i] reconnection ...' % (j+1, MAX_RETRIES))
+                    print('Request timed out: download failed, attempt [%i/%i] reconnection ...' % (j+1, max_retries))
                     handle.close()
                 except requests.exceptions.RequestException:
-                    print('Unknown error: download failed, attempt [%i/%i] reconnection ...' % (j+1, MAX_RETRIES))
+                    print('Unknown error: download failed, attempt [%i/%i] reconnection ...' % (j+1, max_retries))
                     handle.close()
                 except socket.timeout:
-                    print('Connetion lost: download failed, attempt [%i/%i] reconnection ...' % (j+1, MAX_RETRIES))
+                    print('Connetion lost: download failed, attempt [%i/%i] reconnection ...' % (j+1, max_retries))
                     handle.close()
-                if j+2 == MAX_RETRIES:
+                if j+2 == max_retries:
                     return None
-                sleep(WAIT_SECONDS)
+                sleep(wait_seconds)
             else:
                 print('%d All connection attempts failed, download aborted.\n'
                       '\t- Did you accept the End User License Agreement for this dataset ?\n'
                       '\t- Check login/username.\n'
                       '\t- Check image name/url in *.csv file\n'
-                      '\t- Check for connection problems \n'  # for Earthdata download check https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?tid=6447
-                      '\t- Check for blocked IP \n')  # (for Earthdata download connection_problems@oceancolor.gsfc.nasa.gov)
+                      '\t- Check for connection problems \n'  
+                      '\t- Check for blocked IP \n')
+                # Earthdata download issuecheck https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?tid=6447
+                # When IP blocked on Earthdata email: connection_problems@oceancolor.gsfc.nasa.gov)
                 return None
 
 
@@ -627,9 +641,9 @@ if __name__ == "__main__":
             pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
                             options.level + '_' + options.product + '.csv',
                             names=['id', 'dt', 'lat', 'lon', 'image_names', 'url', 'prod_entity'], parse_dates=[1])
-            pois.dropna(subset=['image_names'], axis=0, inplace= True)
+            pois.dropna(subset=['image_names'], axis=0, inplace=True)
             points_of_interest = pois.copy()
-            access_platform,password = get_platform(points_of_interest['dt'], options.instrument, options.level)
+            access_platform, password = get_platform(points_of_interest['dt'], options.instrument, options.level)
             # Parse image_names and url
             for index, record in pois.iterrows():
                 # Convert 'stringified' list to list
@@ -647,7 +661,7 @@ if __name__ == "__main__":
     else:
         # Parse csv file containing points of interest
         points_of_interest = read_csv(args[0], names=['id', 'dt', 'lat', 'lon'], parse_dates=[1])
-        access_platform,password = get_platform(points_of_interest['dt'], options.instrument, options.level)
+        access_platform, password = get_platform(points_of_interest['dt'], options.instrument, options.level)
         query_string = set_query_string(access_platform, options.instrument, options.level, options.product)
         # if access_platform == 'copernicus': # DEPRECATED
         #     pois = get_image_list_copernicus(points_of_interest, access_platform, options.username, password,
