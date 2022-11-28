@@ -39,7 +39,6 @@ URL_SEARCH_CREODIAS = 'https://finder.creodias.eu/resto/api/collections/'
 URL_CREODIAS_LOGIN = 'https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token'
 URL_CREODIAS_GET_FILE = 'https://zipper.creodias.eu/download'
 
-# https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/JPSS1_VIIRS.20220602T132400.GEO-M.nc
 
 # Documentation of Ocean Color Data Format Specification
 # https://oceancolor.gsfc.nasa.gov/products/
@@ -279,18 +278,16 @@ def find_most_recent_olci(imlistraw):
             if len(O_match) > 0 and len(R_match) > 0:
                 for O_img in O_match:
                     todelete.append(O_img)
-            elif len(NR_match) > 0:
-                # select no time limit over near real time
-                if len(NR_match) > 0 and len(NT_match) > 0:
-                    for NR_img in NR_match:
-                        todelete.append(NR_img)
-                elif len(NT_match) > 1:
-                    # select no time limit over near real time
-                    if len(MAR_match) > 0 and len(LN1_match) > 0:
-                        for MAR_img in NR_match:
-                            todelete.append(MAR_img)
+            # select no time limit over near real time
+            if len(NR_match) > 0 and len(NT_match) > 0:
+                for NR_img in NR_match:
+                    todelete.append(NR_img)
+            # select marine processing over land old processing code
+            if len(MAR_match) > 0 and len(LN1_match) > 0:
+                for LN1_img in LN1_match:
+                    todelete.append(LN1_img)
             for todel in todelete:
-                imlistraw = list(filter((todel).__ne__, imlistraw))
+                imlistraw = list(filter(todel.__ne__, imlistraw))
     return imlistraw
 
 
