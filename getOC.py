@@ -363,7 +363,14 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
     return pois
 
 
-def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L2', product='OC'):
+def select_day_night_flag(r, imlistraw, dn_flag):
+    if dn_flag.lower() != 'both':
+        daynight_flag = re.findall(r'"day_night_flag":"(.*?)","time_end":', r.text)
+        imlistraw = [x for x, dn in zip(imlistraw, daynight_flag) if dn == dn_flag.upper()]
+    return imlistraw
+
+
+def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L2', product='OC', dn_flag='both'):
     # https://cmr.earthdata.nasa.gov/search/granules.json?provider=OB_DAAC&short_name=MODISA_L2_OC&temporal=2016-08-21T00:00:01Z,2016-08-22T00:00:01Z&page_size=2000&page_num=1
     # https://cmr.earthdata.nasa.gov/search/granules.json?provider=OB_DAAC&short_name=VIIRSJ1_L1&temporal=2020-08-16T00:00:01Z,2020-08-17T00:00:01Z&page_size=2000&page_num=1
     # https://cmr.earthdata.nasa.gov/search/granules.json?provider=OB_DAAC&short_name=VIIRSJ1_L1_GEO&temporal=2020-08-16T00:00:01Z,2020-08-17T00:00:01Z&page_size=2000&page_num=1
@@ -384,6 +391,7 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
         r = requests.get(query)
         # extract image name from response
         imlistraw = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
+        imlistraw = select_day_night_flag(r, imlistraw, dn_flag)
         # run second query for GEO files if VIIRS and L1A
         if 'VIIRS' in instrument and level == 'L1A' or level == 'L1':
             query = '%s%s&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
@@ -391,7 +399,9 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
                      day_end.strftime("%Y-%m-%dT%H:%M:%SZ"))
             r = requests.get(query)
             # extract image name from response
-            imlistraw = imlistraw + re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
+            imlist_temp = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
+            imlist_temp = select_day_night_flag(r, imlist_temp, dn_flag)
+            imlistraw = imlistraw + imlist_temp
         # run second query for NRT files if date_st or date_end more recent than 60 days
         if datetime.utcnow() - day_st < timedelta(days=60) or datetime.utcnow() - day_end < timedelta(days=60):
             query = '%s%s_NRT&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
@@ -399,7 +409,9 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
                      day_end.strftime("%Y-%m-%dT%H:%M:%SZ"))
             r = requests.get(query)
             # extract image name from response
-            imlistraw = imlistraw + re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
+            imlist_temp = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
+            imlist_temp = select_day_night_flag(r, imlist_temp, dn_flag)
+            imlistraw = imlistraw + imlist_temp
         if level == 'L3m' or product == 'L3b':
             imlistraw = [x for x in imlistraw if options.sresol in x and options.binning_period in x]
         # Keep only good image name image name
@@ -606,6 +618,8 @@ if __name__ == "__main__":
     # Other options
     parser.add_option("-w", "--write-image-links", action="store_true", dest="write_image_links", default=False,
                       help="Write query results image names and corresponding url into csv file.")
+    parser.add_option("--dn", "--day-night-flag", action="store", dest="dn_flag", type='str', default='both',
+                      help="Select day, night or both images, default = both")
     parser.add_option("-r", "--read-image-list", action="store_true", dest="read_image_list", default=False,
                       help="Read previous query from csv file")
     parser.add_option("-q", "--quiet", action="store_false", dest="verbose", default=True)
@@ -672,7 +686,7 @@ if __name__ == "__main__":
                                              options.level, options.product, options.query_delay)
         elif access_platform == 'cmr':
             pois = get_image_list_cmr(points_of_interest, access_platform, query_string, options.instrument,
-                                      options.level, options.product)
+                                      options.level, options.product, options.dn_flag)
         else:
             print('Error: plateform not recognized')
             sys.exit(-1)
