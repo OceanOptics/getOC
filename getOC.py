@@ -386,7 +386,7 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
         imlistraw = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
         # run second query for GEO files if VIIRS and L1A
         if 'VIIRS' in instrument and level == 'L1A' or level == 'L1':
-            query = '%s%s_NRT&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
+            query = '%s%s&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
                     (URL_CMR, query_string.replace('_L1', '_L1_GEO'), w, s, e, n, day_st.strftime("%Y-%m-%dT%H:%M:%SZ"),
                      day_end.strftime("%Y-%m-%dT%H:%M:%SZ"))
             r = requests.get(query)
