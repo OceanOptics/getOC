@@ -7,7 +7,6 @@ MIT License
 Copyright (c) 2019 Nils Haentjens & Guillaume Bourdin
 """
 
-import csv
 import sys
 from datetime import datetime, timedelta
 from getpass import getpass
@@ -16,13 +15,10 @@ from requests.auth import HTTPBasicAuth
 import re
 import os
 from time import sleep
-from pandas import DataFrame, read_csv
+from pandas import read_csv
 import numpy as np
 import socket
 import math
-# import timeout_decorator
-# from signal import signal
-# from multiprocessing import Process, Event, Lock
 
 __version__ = "0.6.0"
 verbose = False
@@ -77,8 +73,7 @@ def get_platform(dates, instrument, level):
     if instrument == 'MSI' or instrument == 'SLSTR' or instrument == 'OLCI':
         access_platf = 'creodias'
         pwd = getpass(prompt='Creodias Password: ', stream=None)
-    elif 'VIIRS' not in instrument and (level == 'L0' or 'L1' in level or level == 'GEO') or instrument == 'MERIS' or \
-            instrument == 'HICO' or any(delta_today < timedelta(hours=48)):
+    elif level == 'L0' or instrument == 'MERIS' or instrument == 'HICO':
         access_platf = 'L1L2_browser'
         pwd = getpass(prompt='EarthData Password: ', stream=None)
     else:
@@ -334,6 +329,7 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
         w, s, e, n, day = format_dtlatlon_query(poi, access_platform)
         # Build Query
         query = '%s%s&per=DAY&day=%s&n=%s&s=%s&w=%s&e=%s' % (URL_L12BROWSER, query_string, day, n, s, w, e)
+        print(query)
         r = requests.get(query)
         # extract image name from response
         if 'href="https://oceandata.sci.gsfc.nasa.gov/ob/getfile/' in r.text: # if one image
@@ -420,7 +416,10 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
         if instrument == 'VIIRSJ1':
             imlistraw = [x for x in imlistraw if "JPSS1_VIIRS." in x]
         if 'MODIS' in instrument:
-            imlistraw = [x for x in imlistraw if "MODIS" in x]
+            if 'L1' in level:
+                imlistraw = [s + '.bz2' for s in imlistraw]
+            else:
+                imlistraw = [x for x in imlistraw if "MODIS" in x]
         # populate lists with image name and url
         pois.at[i, 'image_names'] = imlistraw
         pois.at[i, 'url'] = ['%s%s' % (URL_GET_FILE_CMR, s) for s in imlistraw]
