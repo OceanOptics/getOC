@@ -39,19 +39,19 @@ URL_CREODIAS_GET_FILE = 'https://zipper.creodias.eu/download'
 # Documentation of Ocean Color Data Format Specification
 # https://oceancolor.gsfc.nasa.gov/products/
 INSTRUMENT_FILE_ID = {'SeaWiFS': 'S', 'MODIS-Aqua': 'A', 'MODIS-Terra': 'T', 'OCTS': 'O', 'CZCS': 'C', 'GOCI': 'G',
-                      'MERIS': 'M', 'VIIRSN': 'V', 'VIIRSJ1': 'V', 'HICO': 'H', 'OLCI': 'Sentinel3',
+                      'MERIS': 'M', 'VIIRSN': 'V', 'VIIRSJ1': 'V', 'VIIRSJ2': 'V', 'HICO': 'H', 'OLCI': 'Sentinel3',
                       'SLSTR': 'Sentinel3', 'MSI': 'Sentinel2'}
 INSTRUMENT_QUERY_ID = {'SeaWiFS': 'MLAC', 'MODIS-Aqua': 'amod', 'MODIS-Terra': 'tmod', 'OCTS': 'oc', 'CZCS': 'cz',
-                       'GOCI': 'goci', 'MERIS': 'RR', 'VIIRSN': 'vrsn', 'VIIRSJ1': 'vrj1', 'HICO': 'hi', 'OLCI': 'OL',
-                       'MSI': 'MSI', 'SLSTR': 'SL'}
+                       'GOCI': 'goci', 'MERIS': 'RR', 'VIIRSN': 'vrsn', 'VIIRSJ1': 'vrj1', 'VIIRSJ2': 'vrj2',
+                       'HICO': 'hi', 'OLCI': 'OLCI', 'MSI': 'MSI', 'SLSTR': 'SLSTR'}
 DATA_TYPE_ID = {'SeaWiFS': 'LAC', 'MODIS-Aqua': 'LAC', 'MODIS-Terra': 'LAC', 'OCTS': 'LAC', 'CZCS': '',
-                'MERIS': 'RR', 'VIIRSN': 'SNPP', 'VIIRSJ1': 'JPSS1','HICO': 'ISS', 'OLCI_L1_ERR': 'ERR',
-                'OLCI_L1_EFR': 'EFR', 'SLSTR_L1_RBT': 'RBT', 'OLCI_L2_WRR': 'WRR', 'OLCI_L2_WFR': 'WFR',
-                'SLSTR_L2_WCT': 'WCT', 'SLSTR_L2_WST': 'WST', 'MSI_L1C': 'L1C', 'MSI_L2A': 'L2A'}  # copernicus 'MSI_L2A': 'S2MSI2A'
+                'MERIS': 'RR', 'VIIRSN': 'SNPP', 'VIIRSJ1': 'JPSS1', 'VIIRSJ2': 'JPSS2', 'HICO': 'ISS',
+                'OLCI_L1_ERR': 'ERR', 'OLCI_L1_EFR': 'EFR', 'SLSTR_L1_RBT': 'RBT', 'OLCI_L2_WRR': 'WRR',
+                'OLCI_L2_WFR': 'WFR', 'SLSTR_L2_WCT': 'WCT', 'SLSTR_L2_WST': 'WST', 'MSI_L1C': 'L1C', 'MSI_L2A': 'L2A'}  # copernicus 'MSI_L2A': 'S2MSI2A'
 LEVEL_CREODIAS = {'L1': 'LEVEL1', 'L2': 'LEVEL2', 'L1C': 'LEVEL1C', 'L2A': 'LEVEL2A'}
-SEARCH_CMR = {'SeaWiFS': 'SEAWIFS', 'MODIS-Aqua': 'MODISA', 'MODIS-Terra': 'MODIST',
-              'OCTS': 'OCTS', 'CZCS': 'CZCS', 'VIIRSN': 'VIIRSN', 'VIIRSJ1': 'VIIRSJ1', 'GOCI': 'GOCI'}
-EXTENSION_L1A = {'MODIS-Aqua': '','MODIS-Terra': '', 'VIIRSN': '.nc', 'VIIRSJ1': '.nc'}
+SEARCH_CMR = {'SeaWiFS': 'SEAWIFS', 'MODIS-Aqua': 'MODISA', 'MODIS-Terra': 'MODIST', 'OCTS': 'OCTS', 'CZCS': 'CZCS',
+              'VIIRSN': 'VIIRSN', 'VIIRSJ1': 'VIIRSJ1', 'VIIRSJ2': 'VIIRSJ2', 'GOCI': 'GOCI'}
+EXTENSION_L1A = {'MODIS-Aqua': '','MODIS-Terra': '', 'VIIRSN': '.nc', 'VIIRSJ1': '.nc', 'VIIRSJ2': '.nc'}
 
 
 def get_platform(dates, instrument, level):
@@ -305,7 +305,7 @@ def get_image_list_creodias(pois, access_platform, query_string, instrument, lev
         # extract image name from response
         imlistraw = re.findall(r'"parentIdentifier":null,"title":"(.*?)","description"', r.text)
         # extract url from response
-        fid_list = re.findall(r'"download":{"url":"https:\\/\\/zipper.creodias.eu\\/download\\/(.*?)","mimeType"',
+        fid_list = re.findall(r'{"download":{"url":"https://zipper.creodias.eu/download/(.*?)","mimeType"',
                               r.text)
         sel_s3, sel_fid = sel_most_recent_olci(imlistraw, fid_list)
         # populate lists with image name and url
@@ -329,7 +329,6 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
         w, s, e, n, day = format_dtlatlon_query(poi, access_platform)
         # Build Query
         query = '%s%s&per=DAY&day=%s&n=%s&s=%s&w=%s&e=%s' % (URL_L12BROWSER, query_string, day, n, s, w, e)
-        print(query)
         r = requests.get(query)
         # extract image name from response
         if 'href="https://oceandata.sci.gsfc.nasa.gov/ob/getfile/' in r.text: # if one image
@@ -415,6 +414,8 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
             imlistraw = [x for x in imlistraw if "SNPP_VIIRS." in x]
         if instrument == 'VIIRSJ1':
             imlistraw = [x for x in imlistraw if "JPSS1_VIIRS." in x]
+        if instrument == 'VIIRSJ2':
+            imlistraw = [x for x in imlistraw if "JPSS2_VIIRS." in x]
         if 'MODIS' in instrument:
             if 'L1' in level:
                 imlistraw = [s + '.bz2' for s in imlistraw]
@@ -545,7 +546,6 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                                 raise IOError('incomplete read ({} bytes read, {} more expected)'.
                                               format(actual_length, expected_length - actual_length))
                             handle.close()
-                            print()
                             os.rename('tmp_' + image_names[i], image_names[i])
                             break
                         else:
@@ -593,8 +593,8 @@ if __name__ == "__main__":
     from optparse import OptionParser
     parser = OptionParser(usage="Usage: getOC.py [options] [filename]", version="getOC " + __version__)
     parser.add_option("-i", "--instrument", action="store", dest="instrument",
-                      help="specify instrument, available options are: VIIRS, MODIS-Aqua, MODIS-Terra, OCTS, CZCS, "
-                           "MERIS, HICO, SeaWiFS, OLCI, SLSTR , MSI (L1C and L2A < 12 month)")
+                      help="specify instrument, available options are: VIIRSN, VIIRSJ1, VIIRSJ2, MODIS-Aqua, "
+                           "MODIS-Terra, OCTS, CZCS, MERIS, HICO, SeaWiFS, OLCI, SLSTR , MSI (L1C and L2A < 12 month)")
     parser.add_option("-l", "--level", action="store", dest="level", default='L2',
                       help="specify processing level, available options are: GEO, L1A, L1C (MSI only), L2A (MSI only),"
                            " L2, L3b (only for EarthData queries), and L3m (only for EarthData queries), append "
@@ -647,9 +647,9 @@ if __name__ == "__main__":
     # Get list of images to download
     if options.read_image_list:
         if os.path.isfile(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                          options.level + '_' + options.product + '.csv'):
+                          options.level.replace('_', '-') + '_' + options.product + '.csv'):
             pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                            options.level + '_' + options.product + '.csv',
+                            options.level.replace('_', '-') + '_' + options.product + '.csv',
                             names=['id', 'dt', 'lat', 'lon', 'image_names', 'url', 'prod_entity'], parse_dates=[1])
             pois.dropna(subset=['image_names'], axis=0, inplace=True)
             points_of_interest = pois.copy()
@@ -665,7 +665,7 @@ if __name__ == "__main__":
         else:
             if verbose:
                 print('IOError: [Errno 2] File ' + os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                      options.level + '_' + options.product + '.csv' +
+                      options.level.replace('_', '-') + '_' + options.product + '.csv' +
                       ' does not exist, select option -w (write) instead of -r (read)')
             sys.exit(0)
     else:
@@ -704,7 +704,7 @@ if __name__ == "__main__":
             points_of_interest.at[i, 'url'] = ';'.join(poi['url'])
             points_of_interest.at[i, 'prod_entity'] = ';'.join(poi['prod_entity'])
         points_of_interest.to_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                                  options.level + '_' + options.product + '.csv',
+                                  options.level.replace('_', '-') + '_' + options.product + '.csv',
                                   date_format='%Y/%m/%d %H:%M:%S', header=False, index=False, float_format='%.5f')
     # Download images from url list
     login_download(image_names, url_dwld, options.instrument, access_platform, options.username, password)
