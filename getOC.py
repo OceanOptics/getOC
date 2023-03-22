@@ -598,7 +598,7 @@ if __name__ == "__main__":
     parser.add_option("-l", "--level", action="store", dest="level", default='L2',
                       help="specify processing level, available options are: GEO, L1A, L1C (MSI only), L2A (MSI only),"
                            " L2, L3b (only for EarthData queries), and L3m (only for EarthData queries), append "
-                           "'_ERR' to level for lower OLCI resolution or '_EFR' for full resolution")
+                           "'_ERR' or '-ERR' for lower OLCI resolution and '_EFR' or '-EFR' for full resolution")
     # Level 2 specific option
     parser.add_option("-p", "--product", action="store", dest="product", default='OC',
                       help="specify product identifier (only for L2), available options are: OC, SST, and IOP, "
@@ -642,14 +642,16 @@ if __name__ == "__main__":
         print(parser.usage)
         print('getOC.py: error: too many arguments')
         sys.exit(-1)
+    levelname = options.level.replace('_', '-')
+    options.level = options.level.replace('-', '_')
     image_names = list()
     url_dwld = list()
     # Get list of images to download
     if options.read_image_list:
         if os.path.isfile(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                          options.level.replace('_', '-') + '_' + options.product + '.csv'):
+                          levelname + '_' + options.product + '.csv'):
             pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                            options.level.replace('_', '-') + '_' + options.product + '.csv',
+                            levelname + '_' + options.product + '.csv',
                             names=['id', 'dt', 'lat', 'lon', 'image_names', 'url', 'prod_entity'], parse_dates=[1])
             pois.dropna(subset=['image_names'], axis=0, inplace=True)
             points_of_interest = pois.copy()
@@ -665,7 +667,7 @@ if __name__ == "__main__":
         else:
             if verbose:
                 print('IOError: [Errno 2] File ' + os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                      options.level.replace('_', '-') + '_' + options.product + '.csv' +
+                      levelname + '_' + options.product + '.csv' +
                       ' does not exist, select option -w (write) instead of -r (read)')
             sys.exit(0)
     else:
@@ -676,7 +678,7 @@ if __name__ == "__main__":
         # if access_platform == 'copernicus': # DEPRECATED
         #     pois = get_image_list_copernicus(points_of_interest, access_platform, options.username, password,
         #                     query_string, options.instrument, options.level)
-        print('Query %s level %s %s on %s' % (options.instrument, options.level, options.product, access_platform))
+        print('Query %s level %s %s on %s' % (options.instrument, levelname, options.product, access_platform))
         if access_platform == 'creodias':
             pois = get_image_list_creodias(points_of_interest, access_platform,
                                            query_string, options.instrument, options.level)
@@ -704,7 +706,7 @@ if __name__ == "__main__":
             points_of_interest.at[i, 'url'] = ';'.join(poi['url'])
             points_of_interest.at[i, 'prod_entity'] = ';'.join(poi['prod_entity'])
         points_of_interest.to_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                                  options.level.replace('_', '-') + '_' + options.product + '.csv',
+                                  levelname + '_' + options.product + '.csv',
                                   date_format='%Y/%m/%d %H:%M:%S', header=False, index=False, float_format='%.5f')
     # Download images from url list
     login_download(image_names, url_dwld, options.instrument, access_platform, options.username, password)
