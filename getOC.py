@@ -62,7 +62,7 @@ def get_platform(dates, instrument, level):
     # - L1/L2browser Ocean Color (requires 1s delay => slow): MODISA, MODIST, SeaWiFS, OCTS, CZCS (L0 and L1) / MERIS, HICO (all levels)
     # Note: if any query point dedicated to CMR is less than 2 days old, the entire query will be redirected to L1/L2browser (delay of storage on CMR)
 
-    delta_today = datetime.today() - dates
+    # delta_today = datetime.today() - dates
     # if instrument == 'MSI' and level == 'L2A' and all(delta_today > timedelta(days=365)): # DEPRECATED
     #     raise ValueError(instrument + "level " + level + " supported only for online products on Copernicus (< 1 year old)") # DEPRECATED
     # elif instrument == 'MSI' and level == 'L2A': #instrument == 'OLCI' or  # DEPRECATED
@@ -290,7 +290,7 @@ def get_image_list_creodias(pois, access_platform, query_string, instrument, lev
     # Add column to points of interest data frame
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
-    pois['prod_entity'] = [[] for _ in range(len(pois))]  # only for copernicus, to check online status & metadata
+    # pois['prod_entity'] = [[] for _ in range(len(pois))]  # only for copernicus, to check online status & metadata
     for i, poi in pois.iterrows():
         if verbose:
             print('[%i/%i]   Querying %s %s %s on Creodias    %s    %.5f  %.5f' %
@@ -320,7 +320,7 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
     # Add column to points of interest data frame
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
-    pois['prod_entity'] = [[] for _ in range(len(pois))] # only for copernicus, to check online status & metadata
+    # pois['prod_entity'] = [[] for _ in range(len(pois))] # only for copernicus, to check online status & metadata
     for i, poi in pois.iterrows():
         if verbose:
             print('[%i/%i]   Querying %s %s %s %s on L1L2_browser    %s    %.5f  %.5f' %
@@ -372,7 +372,7 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
     # Add column to points of interest data frame
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
-    pois['prod_entity'] = [[] for _ in range(len(pois))]  # only for copernicus, to check online status & metadata
+    # pois['prod_entity'] = [[] for _ in range(len(pois))]  # only for copernicus, to check online status & metadata
     for i, poi in pois.iterrows():
         if verbose:
             print('[%i/%i]   Querying %s %s %s %s on CMR    %s    %.5f  %.5f' %
@@ -650,9 +650,12 @@ if __name__ == "__main__":
     if options.read_image_list:
         if os.path.isfile(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
                           levelname + '_' + options.product + '.csv'):
+            # pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
+            #                 levelname + '_' + options.product + '.csv',
+            #                 names=['id', 'dt', 'lat', 'lon', 'image_names', 'url', 'prod_entity'], parse_dates=[1])
             pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
                             levelname + '_' + options.product + '.csv',
-                            names=['id', 'dt', 'lat', 'lon', 'image_names', 'url', 'prod_entity'], parse_dates=[1])
+                            names=['id', 'dt', 'lat', 'lon', 'image_names', 'url'], parse_dates=[1])
             pois.dropna(subset=['image_names'], axis=0, inplace=True)
             points_of_interest = pois.copy()
             access_platform, password = get_platform(points_of_interest['dt'], options.instrument, options.level)
@@ -697,14 +700,14 @@ if __name__ == "__main__":
         for _, pois in pois.iterrows():
             image_names.extend(pois['image_names'])
             url_dwld.extend(pois['url'])
-            prod_meta.extend(pois['prod_entity'])
+            # prod_meta.extend(pois['prod_entity'])
     # Write image names
     if options.write_image_links:
         # Reformat image names & url
         for i, poi in points_of_interest.iterrows():
             points_of_interest.at[i, 'image_names'] = ';'.join(poi['image_names'])
             points_of_interest.at[i, 'url'] = ';'.join(poi['url'])
-            points_of_interest.at[i, 'prod_entity'] = ';'.join(poi['prod_entity'])
+            # points_of_interest.at[i, 'prod_entity'] = ';'.join(poi['prod_entity'])
         points_of_interest.to_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
                                   levelname + '_' + options.product + '.csv',
                                   date_format='%Y/%m/%d %H:%M:%S', header=False, index=False, float_format='%.5f')
