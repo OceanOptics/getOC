@@ -62,8 +62,8 @@ def get_platform(dates, instrument, level):
     # - L1/L2browser Ocean Color (requires 1s delay => slow): MODISA, MODIST, SeaWiFS, OCTS, CZCS (L0 and L1) / MERIS, HICO (all levels)
     # Note: if any query point dedicated to CMR is less than 2 days old, the entire query will be redirected to L1/L2browser (delay of storage on CMR)
 
-    # delta_today = datetime.today() - dates
-    # if instrument == 'MSI' and level == 'L2A' and all(delta_today > timedelta(days=365)): # DEPRECATED
+    # delta_today = datetime.today() - dates  # DEPRECATED
+    # if instrument == 'MSI' and level == 'L2A' and all(delta_today > timedelta(days=365)):  # DEPRECATED
     #     raise ValueError(instrument + "level " + level + " supported only for online products on Copernicus (< 1 year old)") # DEPRECATED
     # elif instrument == 'MSI' and level == 'L2A': #instrument == 'OLCI' or  # DEPRECATED
     #     if instrument == 'MSI' and any(delta_today < timedelta(days=365)): # DEPRECATED
@@ -501,13 +501,20 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
     else:
         login_key = None
     for i in range(len(url_dwld)):
+        dwnld_bool = True
         if os.path.isfile(image_names[i]):
-            if verbose:
-                print('Skip ' + image_names[i])
-        else:
+            if float(os.stat(image_names[i]).st_size) > 2*10**5:
+                dwnld_bool = False
+                if verbose:
+                    print('Skip ' + image_names[i])
+            else:
+                print('File %s exists but incomplete (< 200Kb): downloading again' % image_names[i])
+                os.remove(image_names[i])
+        if dwnld_bool:
             max_retries = 5
             wait_seconds = 120
-            for j in range(max_retries):
+            attempts = 0
+            while attempts < max_retries:
                 try:
                     # Open session
                     with requests.Session() as s:
@@ -556,37 +563,31 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                                     if chunk:
                                         handle.write(chunk)
                             handle.close()
+                            actual_length = float(os.stat(image_names[i]).st_size)
+                            if actual_length < 2*10**5:
+                                raise IOError('Download incomplete (< 200Kb): %i bytes downloaded' % actual_length)
                             os.rename('tmp_' + image_names[i], image_names[i])
                             break
-                except requests.exceptions.HTTPError as e:
-                    print('Requests error: %s. Attempt [%i/%i] reconnection ...' % (e, j+1, max_retries))
+                except Exception as e:
+                    print('Download error: %s. Attempt [%i/%i] reconnection ...' % (e, j+1, max_retries))
                     handle.close()
-                except requests.exceptions.ConnectionError:
-                    print('Build https connection failed: download failed, attempt [%i/%i] reconnection ...' %
-                          (j+1, max_retries))
-                    handle.close()
-                except requests.exceptions.Timeout:
-                    print('Request timed out: download failed, attempt [%i/%i] reconnection ...' % (j+1, max_retries))
-                    handle.close()
-                except requests.exceptions.RequestException:
-                    print('Unknown error: download failed, attempt [%i/%i] reconnection ...' % (j+1, max_retries))
-                    handle.close()
-                except socket.timeout:
-                    print('Connetion lost: download failed, attempt [%i/%i] reconnection ...' % (j+1, max_retries))
-                    handle.close()
-                if j+2 == max_retries:
-                    return None
-                sleep(wait_seconds)
-            else:
-                print('%d All connection attempts failed, download aborted.\n'
-                      '\t- Did you accept the End User License Agreement for this dataset ?\n'
-                      '\t- Check login/username.\n'
-                      '\t- Check image name/url in *.csv file\n'
-                      '\t- Check for connection problems \n'  
-                      '\t- Check for blocked IP \n')
-                # Earthdata download issuecheck https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?tid=6447
-                # When IP blocked on Earthdata email: connection_problems@oceancolor.gsfc.nasa.gov)
-                return None
+                    attempts += 1
+                    if os.path.isfile('tmp_' + image_names[i]):
+                        os.remove('tmp_' + image_names[i])
+                    if os.path.isfile(image_names[i]):
+                        os.remove(image_names[i])
+                    if attempts < max_retries:
+                        sleep(wait_seconds)
+                    else:
+                        print('%d All download attempts failed: aborted.\n'
+                              '\t- Did you accept the End User License Agreement for this dataset ?\n'
+                              '\t- Check login/username.\n'
+                              '\t- Check image name/url in *.csv file\n'
+                              '\t- Check for connection problems \n'  
+                              '\t- Check for blocked IP \n')
+                        # Earthdata download issuecheck https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?tid=6447
+                        # When IP blocked on Earthdata email: connection_problems@oceancolor.gsfc.nasa.gov)
+                        return None
 
 
 if __name__ == "__main__":
