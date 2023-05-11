@@ -552,9 +552,6 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                             if actual_length < expected_length:
                                 raise IOError('incomplete read ({} bytes read, {} more expected)'.
                                               format(actual_length, expected_length - actual_length))
-                            handle.close()
-                            os.rename('tmp_' + image_names[i], image_names[i])
-                            break
                         else:
                             if verbose:
                                 print('Downloading ' + image_names[i])
@@ -562,14 +559,18 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                                 for chunk in r.iter_content(chunk_size=16*1024):
                                     if chunk:
                                         handle.write(chunk)
-                            handle.close()
-                            actual_length = float(os.stat(image_names[i]).st_size)
+                            if handle.closed:
+                                handle = open('tmp_' + image_names[i], "ab")
+                            handle.flush()
+                            actual_length = float(os.stat('tmp_' + image_names[i]).st_size)
                             if actual_length < 2*10**5:
                                 raise IOError('Download incomplete (< 200Kb): %i bytes downloaded' % actual_length)
-                            os.rename('tmp_' + image_names[i], image_names[i])
-                            break
+                        handle.close()
+                        os.rename('tmp_' + image_names[i], image_names[i])
+                        break
                 except Exception as e:
-                    print('Download error: %s. Attempt [%i/%i] reconnection ...' % (e, j+1, max_retries))
+                    print('Error downloading %s: %s. Attempt [%i/%i] reconnection ...' % (image_names[i], e,
+                                                                                          attempts+1, max_retries))
                     handle.close()
                     attempts += 1
                     if os.path.isfile('tmp_' + image_names[i]):
