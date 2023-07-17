@@ -686,6 +686,8 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
             else:
                 logger.info('File %s exists but incomplete (< 200Kb): downloading again' % image_names[i])
                 os.remove(image_names[i])
+        elif os.path.isfile('tmp_' + image_names[i]):
+            os.remove('tmp_' + image_names[i])
         if dwnld_bool:
             max_retries = 5
             wait_seconds = 120
