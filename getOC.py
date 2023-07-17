@@ -673,10 +673,6 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
         # get login key to include it into url
         login_key = get_login_key(username, password)
         sleep(1)
-    elif access_platform == 'copernicus':
-        # get keycloak_token
-        login_key = get_keycloak(username, password)
-        sleep(1)
     else:
         login_key = None
     for i in range(len(url_dwld)):
