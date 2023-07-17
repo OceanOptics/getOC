@@ -710,10 +710,6 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                             expected_length = int(r.headers.get('Content-Length'))
                             # complete the file even if connection is cut while downloading and file is incomplete
                             while os.stat('tmp_' + image_names[i]).st_size < expected_length:
-                                r, login_key = request_platform(s, 'tmp_' + image_names[i], url_dwld[i],
-                                                                access_platform, username, password, login_key)
-                                sleep(1)
-                                r.raise_for_status()
                                 handle = download_esa_files(r, 'tmp_' + image_names[i], expected_length)
                         else:
                             if verbose:
