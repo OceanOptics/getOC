@@ -675,6 +675,7 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
         sleep(1)
     else:
         login_key = None
+    handle = None
     for i in range(len(url_dwld)):
         dwnld_bool = True
         if os.path.isfile(image_names[i]):
@@ -726,7 +727,8 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                 except Exception as e:
                     logger.exception('Error downloading %s: %s. Attempt [%i/%i] reconnection ...' %
                                      (image_names[i], e, attempts+1, max_retries))
-                    handle.close()
+                    if handle:
+                        handle.close()
                     attempts += 1
                     if os.path.isfile('tmp_' + image_names[i]):
                         os.remove('tmp_' + image_names[i])
