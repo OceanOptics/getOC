@@ -15,7 +15,7 @@ If you only need to download images in a given time frame without specifying a p
 ## Supported instrument
 
 | Instrument Name | Instrument Acronym | Temporal Coverage | Spatial Coverage |   Level   | L2 Product | 
-| --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | ----- | --- |
 | Coastal Zone Color Scanner (CZCZ) | CZCZ | 1978-1986 | global@1km | L1A, L2, L3m | OC |
 | Ocean Color Temperature Sensor (OCTS) | OCTS | 1996-1997 | global@700m | L1A, L2 | OC |
 | Sea Viewing Wide Field Scanner (SeaWiFS) | SeaWiFS | 1997-2010@daily | global@1.1km | L1A, L2, L3m | OC |
