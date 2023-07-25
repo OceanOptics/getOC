@@ -369,6 +369,17 @@ def get_keycloak(username: str, password: str) -> str:
     return r.json()["access_token"]
 
 
+def clean_nrt_nt_files(imlistraw, fid_list):
+    sel_img = []
+    sel_fid = []
+    for i in range(len(imlistraw)):
+        if 'NRT' not in imlistraw:
+            sel_fid.append(fid_list[i])
+        elif imlistraw[i].replace('.NRT.nc', 'nc') not in sel_img:
+            sel_fid.append(fid_list[i])
+    return sel_img, sel_fid
+
+
 def sel_most_recent_olci(imlistraw, fid_list):
     sel_s3 = find_most_recent_olci(imlistraw)
     sel_fid = []
@@ -658,6 +669,8 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
     if instrument == 'OLCI':
         # select the most recent version of all images
         img_names, urls = sel_most_recent_olci(img_names, urls)
+    else:
+        img_names, urls = clean_nrt_nt_files(img_names, urls)
     image_names = []
     url_dwld = []
     for x in range(len(img_names)):
@@ -689,8 +702,8 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
         elif os.path.isfile('tmp_' + image_names[i]):
             os.remove('tmp_' + image_names[i])
         if dwnld_bool:
-            max_retries = 5
-            wait_seconds = 120
+            max_retries = 10
+            wait_seconds = 180
             attempts = 0
             while attempts < max_retries:
                 try:
