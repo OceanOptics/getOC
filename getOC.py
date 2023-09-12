@@ -373,9 +373,11 @@ def clean_nrt_nt_files(imlistraw, fid_list):
     sel_img = []
     sel_fid = []
     for i in range(len(imlistraw)):
-        if 'NRT' not in imlistraw:
+        if 'NRT' not in imlistraw[i]:
+            sel_img.append(imlistraw[i])
             sel_fid.append(fid_list[i])
-        elif imlistraw[i].replace('.NRT.nc', 'nc') not in sel_img:
+        elif imlistraw[i].replace('.NRT.nc', 'nc') not in imlistraw:
+            sel_img.append(imlistraw[i])
             sel_fid.append(fid_list[i])
     return sel_img, sel_fid
 
