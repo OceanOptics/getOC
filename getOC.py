@@ -24,7 +24,6 @@ import json
 import logging
 
 __version__ = "0.8.0"
-verbose = True
 
 # Set constants
 URL_L12BROWSER = 'https://oceancolor.gsfc.nasa.gov/cgi/browse.pl'
@@ -32,7 +31,7 @@ URL_DIRECT_ACCESS = 'https://oceandata.sci.gsfc.nasa.gov/'
 URL_SEARCH_API = 'https://oceandata.sci.gsfc.nasa.gov/api/file_search'
 URL_GET_FILE_CGI = 'https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/'
 URL_CMR = 'https://cmr.earthdata.nasa.gov/search/granules.json?provider=OB_DAAC'
-URL_GET_FILE_CMR = 'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/'
+URL_GET_FILE_CMR = 'https://oceandata.sci.gsfc.nasa.gov/ob/getfile/'
 URL_SEARCH_COPERNICUS = 'https://catalogue.dataspace.copernicus.eu/resto/api/collections/'
 URL_SEARCH_CREODIAS = 'https://finder.creodias.eu/resto/api/collections/'
 URL_CREODIAS_LOGIN = 'https://auth.creodias.eu/auth/realms/DIAS/protocol/openid-connect/token'
@@ -609,7 +608,7 @@ def request_platform(s, image_names, url_dwld, access_platform, username, passwo
     elif access_platform == 'creodias':  # DEPRECATED
         headers = {'Range': 'bytes=' + str(os.stat('tmp_' + image_names).st_size) + '-'}
         response = s.get(url_dwld + login_key_in, stream=True, timeout=900, headers=headers)
-        if response.status_code != 200 and r.status_code != 206:
+        if response.status_code != 200 and response.status_code != 206:
             if response.text == 'Expired signature!':
                 logger.info('Login expired, reconnection ...')
                 # get login key to include it into url
@@ -627,17 +626,14 @@ def request_platform(s, image_names, url_dwld, access_platform, username, passwo
         # modify header to hide requests query and mimic web browser
         headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, '
                                  'like Gecko) Chrome/68.0.3440.106 Safari/537.36',}
-        s.auth = (username, password)
-        # headers = {'Range':'bytes=' + str(os.stat(image_names).st_size) + '-'}
-        r1 = s.request('get', url_dwld)
-        response = s.get(r1.url, auth=(username, password), stream=True, timeout=900, headers=headers)
+        response = s.get(url_dwld, auth=(username, password), stream=True, timeout=900, headers=headers)
         return response, None, None
 
 
-def download_esa_files(file_todownload, file_name, expected_sz):
+def download_files(file_todownload, file_name, expected_sz):
     prev_file_sz = 0
     with open(file_name, "ab") as handle:
-        for chunk in file_todownload.iter_content(chunk_size=16 * 1024):
+        for chunk in file_todownload.iter_content(chunk_size=128 * 1024):
             if chunk:
                 handle.write(chunk)
                 if os.path.isfile(file_name):
@@ -645,8 +641,8 @@ def download_esa_files(file_todownload, file_name, expected_sz):
                         os.stat(file_name).st_size) / expected_sz * 100, -1)
                     if tmp_file_sz > prev_file_sz:
                         if verbose:
-                            sys.stdout.write('\rDownloading %s      %s%%' %
-                                             (file_name.replace('tmp_', ''), str(tmp_file_sz)))
+                            sys.stdout.write('\rDownloading %s   %s%%' %
+                                             (file_name.replace('tmp_', ''), str(round(tmp_file_sz))))
                         prev_file_sz = tmp_file_sz
                 else:
                     logger.info('Warning: temporary file %s not found' % file_name)
@@ -657,14 +653,15 @@ def download_esa_files(file_todownload, file_name, expected_sz):
     if actual_length < expected_sz:
         raise IOError('incomplete read ({} bytes read, {} more expected)'.
                       format(actual_length, expected_sz - actual_length))
+    if verbose:
+        print(' done')
     return handle
 
 
 def login_download(img_names, urls, instrument, access_platform, username, password):
     # Login to Earth Data and Download image
     if len(urls) == 0 or len(img_names) == 0:
-        if verbose:
-            logger.warning('No image to download.')
+        logger.warning('No image to download.')
         return None
     # remove duplicate from image and url lists
     logger.info('Removing duplicates from %s image list' % instrument)
@@ -696,8 +693,7 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
         if os.path.isfile(image_names[i]):
             if float(os.stat(image_names[i]).st_size) > 2*10**5:
                 dwnld_bool = False
-                if verbose:
-                    logger.info('Skip ' + image_names[i])
+                logger.info('Skip ' + image_names[i])
             else:
                 logger.info('File %s exists but incomplete (< 200Kb): downloading again' % image_names[i])
                 os.remove(image_names[i])
@@ -705,31 +701,28 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
             os.remove('tmp_' + image_names[i])
         if dwnld_bool:
             max_retries = 10
-            wait_seconds = 180
+            wait_seconds = 60
             attempts = 0
             while attempts < max_retries:
                 try:
                     # Open session
+                    logger.info('Downloading %s' % image_names[i])
                     with requests.Session() as s:
                         r, login_key, url = request_platform(s, 'tmp_' + image_names[i], url_dwld[i],
                                                              access_platform, username, password, login_key)
-                        sleep(1)
+                        sleep(0.1)
                         r.raise_for_status()
                         if access_platform == 'copernicus':
                             with s.get(url, verify=False, allow_redirects=True, stream=True) as file:
                                 file.raise_for_status()
                                 expected_length = int(file.headers.get('Content-Length'))
-                                handle = download_esa_files(file, 'tmp_' + image_names[i], expected_length)
-                        elif access_platform == 'creodias':  # DEPRECATED
+                                handle = download_files(file, 'tmp_' + image_names[i], expected_length)
+                        elif access_platform == 'creodias' or 'cmr':  # creodias is DEPRECATED
                             expected_length = int(r.headers.get('Content-Length'))
-                            # complete the file even if connection is cut while downloading and file is incomplete
-                            while os.stat('tmp_' + image_names[i]).st_size < expected_length:
-                                handle = download_esa_files(r, 'tmp_' + image_names[i], expected_length)
+                            handle = download_files(r, 'tmp_' + image_names[i], expected_length)
                         else:
-                            if verbose:
-                                logger.info('Downloading ' + image_names[i])
                             with open('tmp_' + image_names[i], "ab") as handle:
-                                for chunk in r.iter_content(chunk_size=16*1024):
+                                for chunk in r.iter_content(chunk_size=128*1024):
                                     if chunk:
                                         handle.write(chunk)
                             if handle.closed:
@@ -842,10 +835,9 @@ if __name__ == "__main__":
                     image_names.append(imli[im])
                     url_dwld.append(urli[im])
         else:
-            if verbose:
-                logger.exception('IOError: [Errno 2] File ' + os.path.splitext(args[0])[0] + '_' +
-                                 options.instrument + '_' + options.level + '_' + options.product + '.csv' +#
-                                 ' does not exist, select option -w (write) instead of -r (read)')
+            logger.exception('IOError: [Errno 2] File ' + os.path.splitext(args[0])[0] + '_' +
+                             options.instrument + '_' + options.level + '_' + options.product + '.csv' +#
+                             ' does not exist, select option -w (write) instead of -r (read)')
             sys.exit(0)
     else:
         # Parse csv file containing points of interest
