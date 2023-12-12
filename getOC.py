@@ -345,7 +345,7 @@ def get_login_key(username, password):  # get login key for creodias download
     try:
         return login_key['access_token']
     except KeyError:
-        raise RuntimeError('Unable to get login key. Response was ' + {login_key})
+        raise RuntimeError('Unable to get login key. Response was ' + login_key.text)
 
 
 def get_keycloak(username: str, password: str) -> str:
@@ -424,6 +424,7 @@ def find_most_recent_olci(imlistraw):
 
 
 def get_image_list_copernicus(pois, access_platform, query_string, instrument, level='L1'):
+    # https://documentation.dataspace.copernicus.eu/APIs/
     # Add column to points of interest data frame
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
@@ -713,7 +714,7 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
                         sleep(0.1)
                         r.raise_for_status()
                         if access_platform == 'copernicus':
-                            with s.get(url, verify=False, allow_redirects=True, stream=True) as file:
+                            with s.get(url, allow_redirects=True, stream=True) as file:
                                 file.raise_for_status()
                                 expected_length = int(file.headers.get('Content-Length'))
                                 handle = download_files(file, 'tmp_' + image_names[i], expected_length)
@@ -784,7 +785,7 @@ if __name__ == "__main__":
                       help="specify username to login Creodias (OLCI / SLSTR / MSI) or EarthData (any other sensor)"
                            "(Copernicus DEPRECATED)")
     # Other options
-    parser.add_option("-w", "--write-image-names", action="store_true", dest="write_image_names", default=False,
+    parser.add_option("-w", "--write-image-names", action="store_true", dest="write_image_names", default=True,
                       help="Write query results image names and corresponding url into csv file.")
     parser.add_option("--dn", "--day-night-flag", action="store", dest="dn_flag", type='str', default='both',
                       help="Select day, night or both images, default = both")
@@ -815,31 +816,31 @@ if __name__ == "__main__":
     # options.level = options.level.replace('-', '_')
     image_names = list()
     url_dwld = list()
-    # Get list of images to download
-    if options.read_image_list:
+    # Get list of images to download from written file if available
+    if options.read_image_list and os.path.isfile(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
+                                                  options.level + '_' + options.product + '.csv'):
         options.write_image_names = False
-        if os.path.isfile(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                          options.level + '_' + options.product + '.csv'):#
-            pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
-                            options.level + '_' + options.product + '.csv',#
-                            names=['id', 'dt', 'lat', 'lon', 'image_names', 'url'], parse_dates=[1])
-            pois.dropna(subset=['image_names'], axis=0, inplace=True)
-            points_of_interest = pois.copy()
-            access_platform, password = get_platform(points_of_interest['dt'], options.instrument, options.level)
-            # Parse image_names and url
-            for index, record in pois.iterrows():
-                # Convert 'stringified' list to list
-                imli = record['image_names'].split(';')
-                urli = record['url'].split(';')
-                for im in range(len(imli)):
-                    image_names.append(imli[im])
-                    url_dwld.append(urli[im])
-        else:
-            logger.exception('IOError: [Errno 2] File ' + os.path.splitext(args[0])[0] + '_' +
-                             options.instrument + '_' + options.level + '_' + options.product + '.csv' +#
-                             ' does not exist, select option -w (write) instead of -r (read)')
-            sys.exit(0)
-    else:
+        pois = read_csv(os.path.splitext(args[0])[0] + '_' + options.instrument + '_' +
+                        options.level + '_' + options.product + '.csv',
+                        names=['id', 'dt', 'lat', 'lon', 'image_names', 'url'], parse_dates=[1])
+        pois.dropna(subset=['image_names'], axis=0, inplace=True)
+        points_of_interest = pois.copy()
+        access_platform, password = get_platform(points_of_interest['dt'], options.instrument, options.level)
+        # Parse image_names and url
+        for index, record in pois.iterrows():
+            # Convert 'stringified' list to list
+            imli = record['image_names'].split(';')
+            urli = record['url'].split(';')
+            for im in range(len(imli)):
+                image_names.append(imli[im])
+                url_dwld.append(urli[im])
+    elif options.read_image_list:
+        logger.exception('IOError: [Errno 2] Option -r (read) was selected, however, file ' +
+                         os.path.splitext(args[0])[0] + '_' + options.instrument + '_' + options.level + '_' +
+                         options.product + '.csv' + ' does not exist: option -w (write) was activated by default')
+        options.write_image_names = True
+    # Query list of images to download
+    if options.write_image_names:
         # Parse csv file containing points of interest
         points_of_interest = read_csv(args[0], names=['id', 'dt', 'lat', 'lon'], parse_dates=[1])
         access_platform, password = get_platform(points_of_interest['dt'], options.instrument, options.level)
@@ -865,7 +866,7 @@ if __name__ == "__main__":
         for _, poi in pois.iterrows():
             image_names.extend(poi['image_names'])
             url_dwld.extend(poi['url'])
-    # Write image names
+    # Write list of images to download in csv
     if options.write_image_names:
         # Reformat image names & url
         for i, poi in points_of_interest.iterrows():
