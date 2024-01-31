@@ -8,7 +8,7 @@ instrument, processing level, and product type. Depending on the options selecte
 
 Synthax for ESA satellite collections can be found [here](https://catalogue.dataspace.copernicus.eu/resto/api/collections/Sentinel3/describe.xml) (example for Sentinel-3 collection)
 
-DEPRECATED: Previous getOC versions used the copernicus API but the copernicus v2 required 2 step authentications preventing automatic downloads. ESA satellites (+Landsat over europe) are now downloaded using the new Copernicus API
+DEPRECATED: Previous getOC versions used the Creodias API but the Creodias v2 API required 2 step authentications preventing automatic downloads. ESA satellites (+Landsat over europe) are now downloaded using the new Copernicus API
 
 If you only need to download images in a given time frame without specifying a position, the [File Search](https://oceandata.sci.gsfc.nasa.gov/api/file_search) utility from NASA might be a better tool. The NASA utility also provides a few wget examples on this [Ocean Color Forum Post](https://oceancolor.gsfc.nasa.gov/forum/oceancolor/topic_show.pl?pid=12520).
 

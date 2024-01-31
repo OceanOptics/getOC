@@ -429,9 +429,8 @@ def get_image_list_copernicus(pois, access_platform, query_string, instrument, l
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
     for i, poi in pois.iterrows():
-        if verbose:
-            logger.info('[%i/%i]   Querying %s %s %s on Copernicus    %s    %.5f  %.5f' %
-                  (i + 1, len(pois), poi['id'], instrument, level, poi['dt'], poi['lat'], poi['lon']))
+        logger.info('[%i/%i]   Querying %s %s %s on Copernicus    %s    %.5f  %.5f' %
+                    (i + 1, len(pois), poi['id'], instrument, level, poi['dt'], poi['lat'], poi['lon']))
         # get polygon around poi and date
         w, s, e, n, day_st, day_end = format_dtlatlon_query(poi, access_platform)
         query = "%s%s/search.json?%s&startDate=%s&completionDate=%s&maxRecords=200&box=%s,%s,%s,%s" % \
@@ -446,7 +445,10 @@ def get_image_list_copernicus(pois, access_platform, query_string, instrument, l
             imlistraw = list()
             prod_meta = list()
             for im in range(len(url_list)):
-                imlistraw.append(img_properties[im]['title'] + '.zip')
+                if 'MSI' in instrument:
+                    imlistraw.append(img_properties[im]['title'])
+                else:
+                    imlistraw.append(img_properties[im]['title'] + '.zip')
                 prod_meta.append(img_properties[im]['status'])
             sel_s3, sel_fid = sel_most_recent_olci(imlistraw, url_list)
             # populate lists with image name, id, and status
@@ -461,9 +463,8 @@ def get_image_list_creodias(pois, access_platform, query_string, instrument, lev
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
     for i, poi in pois.iterrows():
-        if verbose:
-            logger.info('[%i/%i]   Querying %s %s %s on Creodias    %s    %.5f  %.5f' %
-                  (i + 1, len(pois), poi['id'], instrument, level, poi['dt'], poi['lat'], poi['lon']))
+        logger.info('[%i/%i]   Querying %s %s %s on Creodias    %s    %.5f  %.5f' %
+                    (i + 1, len(pois), poi['id'], instrument, level, poi['dt'], poi['lat'], poi['lon']))
         # get polygon around poi and date
         w, s, e, n, day_st, day_end = format_dtlatlon_query(poi, access_platform)
         # Build Query
@@ -490,9 +491,8 @@ def get_image_list_l12browser(pois, access_platform, query_string, instrument, l
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
     for i, poi in pois.iterrows():
-        if verbose:
-            logger.info('[%i/%i]   Querying %s %s %s %s on L1L2_browser    %s    %.5f  %.5f' %
-                  (i+1, len(pois), poi['id'], instrument, level, product, poi['dt'], poi['lat'], poi['lon']))
+        logger.info('[%i/%i]   Querying %s %s %s %s on L1L2_browser    %s    %.5f  %.5f' %
+                    (i+1, len(pois), poi['id'], instrument, level, product, poi['dt'], poi['lat'], poi['lon']))
         # get polygon around poi and date
         w, s, e, n, day = format_dtlatlon_query(poi, access_platform)
         # Build Query
@@ -541,9 +541,8 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
     for i, poi in pois.iterrows():
-        if verbose:
-            logger.info('[%i/%i]   Querying %s %s %s %s on CMR    %s    %.5f  %.5f' %
-                  (i+1, len(pois), poi['id'], instrument, level, product, poi['dt'], poi['lat'], poi['lon']))
+        logger.info('[%i/%i]   Querying %s %s %s %s on CMR    %s    %.5f  %.5f' %
+                    (i+1, len(pois), poi['id'], instrument, level, product, poi['dt'], poi['lat'], poi['lon']))
         # get polygon around poi and date
         w, s, e, n, day_st, day_end = format_dtlatlon_query(poi, access_platform)
         # Build Query
@@ -604,7 +603,7 @@ def request_platform(s, image_names, url_dwld, access_platform, username, passwo
         response = s.get(url, allow_redirects=False)
         while response.status_code in (301, 302, 303, 307):
             url = response.headers['Location']
-            response = s.get(url, allow_redirects=False)
+            response = s.get(url, allow_redirects=False, stream=True, timeout=30)
         return response, None, url
     elif access_platform == 'creodias':  # DEPRECATED
         headers = {'Range': 'bytes=' + str(os.stat('tmp_' + image_names).st_size) + '-'}
@@ -702,7 +701,7 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
             os.remove('tmp_' + image_names[i])
         if dwnld_bool:
             max_retries = 10
-            wait_seconds = 60
+            wait_seconds = 30
             attempts = 0
             while attempts < max_retries:
                 try:
