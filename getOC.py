@@ -9,18 +9,19 @@ Copyright (c) 2019 Nils Haentjens & Guillaume Bourdin
 
 import sys
 from datetime import datetime, timedelta
+from operator import itemgetter
 from getpass import getpass
 import requests
-from requests.auth import HTTPBasicAuth
+# from requests.auth import HTTPBasicAuth
 import re
 import os
 from time import sleep
 from pandas import read_csv
 import numpy as np
 import pandas as pd
-import socket
+# import socket
 import math
-import json
+# import json
 import logging
 
 __version__ = "0.8.0"
@@ -381,8 +382,8 @@ def clean_nrt_nt_files(imlistraw, fid_list):
     return sel_img, sel_fid
 
 
-def sel_most_recent_olci(imlistraw, fid_list):
-    sel_s3 = find_most_recent_olci(imlistraw)
+def sel_most_recent_esa(imlistraw, fid_list, instrument):
+    sel_s3 = find_most_recent_esa(imlistraw, instrument)
     sel_fid = []
     for i in range(len(imlistraw)):
         if imlistraw[i] in sel_s3:
@@ -390,36 +391,57 @@ def sel_most_recent_olci(imlistraw, fid_list):
     return sel_s3, sel_fid
 
 
-def find_most_recent_olci(imlistraw):
+def find_most_recent_esa(imlistraw, instrument):
     ref = imlistraw
-    ref = [x[0:29] for x in ref]
-    x = np.array(ref)
-    uref = np.unique(x)
-    todelete = []
-    for singlref in uref:
-        str_match = [s for s in imlistraw if singlref in s]
-        NR_match = [s for s in str_match if '_NR_' in s]
-        NT_match = [s for s in str_match if '_NT_' in s]
-        O_match = [s for s in str_match if '_O_' in s]
-        R_match = [s for s in str_match if '_R_' in s]
-        LN1_match = [s for s in str_match if '_LN1_' in s]
-        # LN2_match = [s for s in str_match if '_LN2_' in s]
-        MAR_match = [s for s in str_match if '_MAR_' in s]
-        if len(str_match) > 1:
-            # select reprocessed over operational
-            if len(O_match) > 0 and len(R_match) > 0:
-                for O_img in O_match:
-                    todelete.append(O_img)
-            # select no time limit over near real time
-            if len(NR_match) > 0 and len(NT_match) > 0:
-                for NR_img in NR_match:
-                    todelete.append(NR_img)
-            # select marine processing over land old processing code
-            if len(MAR_match) > 0 and len(LN1_match) > 0:
-                for LN1_img in LN1_match:
-                    todelete.append(LN1_img)
-            for todel in todelete:
-                imlistraw = list(filter(todel.__ne__, imlistraw))
+    if 'OLCI' in instrument:
+        ref = [x[0:29] for x in ref]
+        x = np.array(ref)
+        uref = np.unique(x)
+        todelete = []
+        for singlref in uref:
+            str_match = [s for s in imlistraw if singlref in s]
+            NR_match = [s for s in str_match if '_NR_' in s]
+            NT_match = [s for s in str_match if '_NT_' in s]
+            O_match = [s for s in str_match if '_O_' in s]
+            R_match = [s for s in str_match if '_R_' in s]
+            LN1_match = [s for s in str_match if '_LN1_' in s]
+            # LN2_match = [s for s in str_match if '_LN2_' in s]
+            MAR_match = [s for s in str_match if '_MAR_' in s]
+            if len(str_match) > 1:
+                # select reprocessed over operational
+                if len(O_match) > 0 and len(R_match) > 0:
+                    for O_img in O_match:
+                        todelete.append(O_img)
+                # select no time limit over near real time
+                if len(NR_match) > 0 and len(NT_match) > 0:
+                    for NR_img in NR_match:
+                        todelete.append(NR_img)
+                # select marine processing over land old processing code
+                if len(MAR_match) > 0 and len(LN1_match) > 0:
+                    for LN1_img in LN1_match:
+                        todelete.append(LN1_img)
+                for todel in todelete:
+                    imlistraw = list(filter(todel.__ne__, imlistraw))
+    elif 'MSI' in instrument:
+        dt_processing = [datetime.strptime(x.replace('.SAFE', '').split('_')[-1], '%Y%m%dT%H%M%S') for x in ref]
+        ref = ['_'.join(itemgetter(*[0,1,2,4,5])(x.replace('.SAFE', '').split('_'))) for x in ref]
+        dtx = np.array(dt_processing)
+        refx = np.array(ref)
+        imlistrawx = np.array(imlistraw)
+        uref = np.unique(refx)
+        todelete = []
+        for singlref in uref:
+            str_match = imlistrawx[np.where(refx == singlref)]
+            dt_match = dtx[np.where(refx == singlref)]
+            if len(dt_match) > 1:
+                # select last reprocessing
+                dt_ref = datetime.utcnow()
+                recent_dt = dt_match[np.where(abs(dt_match - dt_ref) == min(abs(dt_match - dt_ref)))]
+                ref_tokeep = imlistrawx[np.logical_and(refx == singlref, dtx == recent_dt)]
+                ref_todel = str_match[ref_tokeep != str_match]
+                for todel in ref_todel:
+                    todelete.append(todel)
+                    imlistraw = list(filter(todel.__ne__, imlistraw))
     return imlistraw
 
 
@@ -450,7 +472,7 @@ def get_image_list_copernicus(pois, access_platform, query_string, instrument, l
                 else:
                     imlistraw.append(img_properties[im]['title'] + '.zip')
                 prod_meta.append(img_properties[im]['status'])
-            sel_s3, sel_fid = sel_most_recent_olci(imlistraw, url_list)
+            sel_s3, sel_fid = sel_most_recent_esa(imlistraw, url_list, instrument)
             # populate lists with image name, id, and status
             # pois.at[i, 'image_names'] = [s + '.zip' for s in sel_s3]
             pois.at[i, 'image_names'] = sel_s3
@@ -477,7 +499,7 @@ def get_image_list_creodias(pois, access_platform, query_string, instrument, lev
         # extract url from response
         fid_list = re.findall(r'{"download":{"url":"https://zipper.creodias.eu/download/(.*?)","mimeType"',
                               r.text)
-        sel_s3, sel_fid = sel_most_recent_olci(imlistraw, fid_list)
+        sel_s3, sel_fid = sel_most_recent_esa(imlistraw, fid_list, instrument)
         # populate lists with image name and url
         # pois.at[i, 'image_names'] = [sub.replace('.SAFE', '') + '.zip' for sub in imlistraw]
         pois.at[i, 'image_names'] = [s + '.zip' for s in sel_s3]
@@ -665,9 +687,9 @@ def login_download(img_names, urls, instrument, access_platform, username, passw
         return None
     # remove duplicate from image and url lists
     logger.info('Removing duplicates from %s image list' % instrument)
-    if instrument == 'OLCI':
+    if instrument == 'OLCI' or instrument == 'MSI':
         # select the most recent version of all images
-        img_names, urls = sel_most_recent_olci(img_names, urls)
+        img_names, urls = sel_most_recent_esa(img_names, urls, instrument)
     else:
         img_names, urls = clean_nrt_nt_files(img_names, urls)
     image_names = []
