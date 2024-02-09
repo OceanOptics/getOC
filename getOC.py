@@ -474,7 +474,7 @@ def get_image_list_copernicus(pois, access_platform, query_string, instrument, l
                 prod_meta.append(img_properties[im]['status'])
             sel_s3, sel_fid = sel_most_recent_esa(imlistraw, url_list, instrument)
             # populate lists with image name, id, and status
-            # pois.at[i, 'image_names'] = [s + '.zip' for s in sel_s3]
+            pois.at[i, 'image_names'] = [s + '.zip' for s in sel_s3]
             pois.at[i, 'image_names'] = sel_s3
             pois.at[i, 'url'] = sel_fid
     return pois
