@@ -423,8 +423,8 @@ def find_most_recent_esa(imlistraw, instrument):
                 for todel in todelete:
                     imlistraw = list(filter(todel.__ne__, imlistraw))
     elif 'MSI' in instrument:
-        dt_processing = [datetime.strptime(x.replace('.SAFE', '').split('_')[-1], '%Y%m%dT%H%M%S') for x in ref]
-        ref = ['_'.join(itemgetter(*[0,1,2,4,5])(x.replace('.SAFE', '').split('_'))) for x in ref]
+        dt_processing = [datetime.strptime(x.replace('.SAFE.zip', '').split('_')[-1], '%Y%m%dT%H%M%S') for x in ref]
+        ref = ['_'.join(itemgetter(*[0,1,2,4,5])(x.replace('.SAFE.zip', '').split('_'))) for x in ref]
         dtx = np.array(dt_processing)
         refx = np.array(ref)
         imlistrawx = np.array(imlistraw)
@@ -467,14 +467,11 @@ def get_image_list_copernicus(pois, access_platform, query_string, instrument, l
             imlistraw = list()
             prod_meta = list()
             for im in range(len(url_list)):
-                if 'MSI' in instrument:
-                    imlistraw.append(img_properties[im]['title'])
-                else:
-                    imlistraw.append(img_properties[im]['title'] + '.zip')
+                imlistraw.append(img_properties[im]['title'] + '.zip')
                 prod_meta.append(img_properties[im]['status'])
             sel_s3, sel_fid = sel_most_recent_esa(imlistraw, url_list, instrument)
             # populate lists with image name, id, and status
-            pois.at[i, 'image_names'] = [s + '.zip' for s in sel_s3]
+            # pois.at[i, 'image_names'] = [s + '.zip' for s in sel_s3]
             pois.at[i, 'image_names'] = sel_s3
             pois.at[i, 'url'] = sel_fid
     return pois
