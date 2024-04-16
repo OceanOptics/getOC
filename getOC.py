@@ -448,6 +448,7 @@ def find_most_recent_esa(imlistraw, instrument):
 def get_image_list_copernicus(pois, access_platform, query_string, instrument, level='L1'):
     # https://documentation.dataspace.copernicus.eu/APIs/
     # Add column to points of interest data frame
+    maxretries = 10
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
     for i, poi in pois.iterrows():
@@ -459,21 +460,31 @@ def get_image_list_copernicus(pois, access_platform, query_string, instrument, l
                 (URL_SEARCH_COPERNICUS, INSTRUMENT_FILE_ID[instrument], query_string,
                  day_st.strftime("%Y-%m-%dT%H:%M:%S.000Z"), day_end.strftime("%Y-%m-%dT%H:%M:%S.000Z"), w, s, e, n)
         r = requests.get(query).json()
+        attempt = 0
+        while 'features' not in list(r.keys()) and attempt <= maxretries:
+            r = requests.get(query).json()
+            attempt += 1
+            logger.info('Image feature not found in server response, retry [%i/%i]' % (attempt, maxretries))
+            sleep(5)
         # extract image name, id, and status from response
-        img_features = pd.DataFrame.from_dict(r['features'])
-        if len(img_features) > 0:
-            url_list = list(img_features.id)
-            img_properties = dict(img_features.properties)
-            imlistraw = list()
-            prod_meta = list()
-            for im in range(len(url_list)):
-                imlistraw.append(img_properties[im]['title'] + '.zip')
-                prod_meta.append(img_properties[im]['status'])
-            sel_s3, sel_fid = sel_most_recent_esa(imlistraw, url_list, instrument)
-            # populate lists with image name, id, and status
-            # pois.at[i, 'image_names'] = [s + '.zip' for s in sel_s3]
-            pois.at[i, 'image_names'] = sel_s3
-            pois.at[i, 'url'] = sel_fid
+        if 'features' in list(r.keys()):
+            img_features = pd.DataFrame.from_dict(r['features'])
+            if len(img_features) > 0:
+                url_list = list(img_features.id)
+                img_properties = dict(img_features.properties)
+                imlistraw = list()
+                prod_meta = list()
+                for im in range(len(url_list)):
+                    imlistraw.append(img_properties[im]['title'] + '.zip')
+                    prod_meta.append(img_properties[im]['status'])
+                sel_s3, sel_fid = sel_most_recent_esa(imlistraw, url_list, instrument)
+                # populate lists with image name, id, and status
+                # pois.at[i, 'image_names'] = [s + '.zip' for s in sel_s3]
+                pois.at[i, 'image_names'] = sel_s3
+                pois.at[i, 'url'] = sel_fid
+        else:
+            logger.info('%s unsuccessful attemps to retrieve image feature in server response, '
+                        'datetime %s, lat %s, lon %s ignored' % (maxretries, poi['dt'], poi['lat'], poi['lon']))
     return pois
 
 
