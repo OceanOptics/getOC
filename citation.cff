@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Haëntjens
+    given-names: Nils
+    orcid: https://orcid.org/0000-0002-7155-2721
+  - family-names: Bourdin
+    given-names: Guillaume
+    orcid: https://orcid.org/0000-0001-7608-5256
+title: "getOC: a Pyhton-based batch download utility for Ocean Color satellite data"
+version: 0.8.0
+identifiers:
+  - type: url
+    value: 'https://github.com/OceanOptics/getOC'
+date-released: 2023-07-17
