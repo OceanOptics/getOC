@@ -128,6 +128,7 @@ Typical call from bash:
      - `IOP`
      - `SST`
 
+
 Options specific to a level:
 
 - Level 1 & 2:
@@ -158,9 +159,15 @@ Options specific to a level:
 
 Options specific to a downloading platform:
 
+- ESA Copernicus downloads only:
+    - `-c CLOUD_COVER_INTERVAL`, `--cloud-cover=CLOUD_COVER_INTERVAL`: Cloud cover interval to download (in %):
+        - `-c [0 100]`: download all images [default]
+        - `-c [0 80]`: download all images with less than 80% cloud cover
+        - `-c [0 20]`: download all images with less than 20% cloud cover
+        - ...
+
 - NASA Ocean Color Level 1&2 Browser:
-    - `-d QUERY_DELAY`, `--delay=QUERY_DELAY`:Delay between queries only needed to query L1L2_browser. (default=1
-      second)
+    - `-d QUERY_DELAY`, `--delay=QUERY_DELAY`: Delay between queries only needed to query L1L2_browser. (default=1 second)
 
 Instruments specificity:
 

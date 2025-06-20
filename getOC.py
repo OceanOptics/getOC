@@ -445,7 +445,7 @@ def find_most_recent_esa(imlistraw, instrument):
     return imlistraw
 
 
-def get_image_list_copernicus(pois, access_platform, query_string, instrument, level='L1'):
+def get_image_list_copernicus(pois, access_platform, query_string, instrument, level='L1', cloud_cover='[0,100]'):
     # https://documentation.dataspace.copernicus.eu/APIs/
     # Add column to points of interest data frame
     maxretries = 10
@@ -456,8 +456,8 @@ def get_image_list_copernicus(pois, access_platform, query_string, instrument, l
                     (i + 1, len(pois), poi['id'], instrument, level, poi['dt'], poi['lat'], poi['lon']))
         # get polygon around poi and date
         w, s, e, n, day_st, day_end = format_dtlatlon_query(poi, access_platform)
-        query = "%s%s/search.json?%s&startDate=%s&completionDate=%s&maxRecords=200&box=%s,%s,%s,%s" % \
-                (URL_SEARCH_COPERNICUS, INSTRUMENT_FILE_ID[instrument], query_string,
+        query = "%s%s/search.json?%s&cloudCover=%s&startDate=%s&completionDate=%s&maxRecords=200&box=%s,%s,%s,%s" % \
+                (URL_SEARCH_COPERNICUS, INSTRUMENT_FILE_ID[instrument], query_string, cloud_cover,
                  day_st.strftime("%Y-%m-%dT%H:%M:%S.000Z"), day_end.strftime("%Y-%m-%dT%H:%M:%S.000Z"), w, s, e, n)
         r = requests.get(query).json()
         attempt = 0
@@ -605,7 +605,7 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
             imlistraw = imlistraw + imlist_temp
         if level == 'L3m' or product == 'L3b':
             imlistraw = [x for x in imlistraw if options.sresol in x and options.binning_period in x]
-        # Keep only good image name image name
+        # Keep only good image name
         if instrument == 'VIIRSN':
             imlistraw = [x for x in imlistraw if "SNPP_VIIRS." in x]
         if instrument == 'VIIRSJ1':
@@ -628,7 +628,7 @@ def request_platform(s, image_names, url_dwld, access_platform, username, passwo
         # get keycloak_token
         login_key = get_keycloak(username, password)
         # start download request
-        url = f"http://catalogue.dataspace.copernicus.eu/odata/v1/Products(%s)/$value" % url_dwld
+        url = f"https://catalogue.dataspace.copernicus.eu/odata/v1/Products(%s)/$value" % url_dwld
         s.headers.update({'Authorization': 'Bearer %s' % login_key})
         response = s.get(url, allow_redirects=False)
         while response.status_code in (301, 302, 303, 307):
@@ -823,6 +823,8 @@ if __name__ == "__main__":
     parser.add_option("-q", "--quiet", action="store_false", dest="verbose", default=True)
     parser.add_option("--box", "--bounding-box-size", action="store", dest="bounding_box_sz", type='float', default=60,
                       help="specify bounding box size in nautical miles")
+    parser.add_option("-c", "--cloud-cover", action="store", dest="cloud_cover", type='str', default='[0, 100]',
+                      help="specify cloud cover interval to download")
     (options, args) = parser.parse_args()
     verbose = options.verbose
     if options.instrument is None:
@@ -880,7 +882,7 @@ if __name__ == "__main__":
         logger.info('Query %s level %s %s on %s' % (options.instrument, options.level, options.product, access_platform))#
         if access_platform == 'copernicus':
             pois = get_image_list_copernicus(points_of_interest, access_platform,
-                                             query_string, options.instrument, options.level)
+                                             query_string, options.instrument, options.level, options.cloud_cover)
         elif access_platform == 'L1L2_browser':
             pois = get_image_list_l12browser(points_of_interest, access_platform, query_string, options.instrument,
                                              options.level, options.product, options.query_delay)
