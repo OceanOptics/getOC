@@ -31,7 +31,7 @@ URL_L12BROWSER = 'https://oceancolor.gsfc.nasa.gov/cgi/browse.pl'
 URL_DIRECT_ACCESS = 'https://oceandata.sci.gsfc.nasa.gov/'
 URL_SEARCH_API = 'https://oceandata.sci.gsfc.nasa.gov/api/file_search'
 URL_GET_FILE_CGI = 'https://oceandata.sci.gsfc.nasa.gov/cgi/getfile/'
-URL_CMR = 'https://cmr.earthdata.nasa.gov/search/granules.json?provider=OB_DAAC'
+URL_CMR = 'https://cmr.earthdata.nasa.gov/search/granules.json?'
 URL_GET_FILE_CMR = 'https://oceandata.sci.gsfc.nasa.gov/ob/getfile/'
 URL_SEARCH_COPERNICUS = 'https://catalogue.dataspace.copernicus.eu/resto/api/collections/'
 URL_SEARCH_CREODIAS = 'https://finder.creodias.eu/resto/api/collections/'
@@ -313,7 +313,11 @@ def set_query_string(access_platform, instrument, level='L2', product='OC'):
 
 
 def format_dtlatlon_query(poi, access_platform):
-    # Add room around poi using bounding box option (default = 60 nautical miles), and wrap longitude into [-180:180]
+    # Define lat/lon limit based on box size (in nautical miles) around poi using bounding box option (default = 60 nautical miles)
+    # If options.bounding_box_sz == 0, define lat/lon limit based on a 3 nm box size
+    # Wrap longitude onto [-180:180]
+    if options.bounding_box_sz == 0:
+        options.bounding_box_sz = 3
     if poi['lat'] + options.bounding_box_sz / 60 > 90:
         n = str(90)
     else:
@@ -570,37 +574,53 @@ def get_image_list_cmr(pois, access_platform, query_string, instrument, level='L
     # Add column to points of interest data frame
     pois['image_names'] = [[] for _ in range(len(pois))]
     pois['url'] = [[] for _ in range(len(pois))]
+    if level == 'L2':
+        provider = 'OB_CLOUD'
+        # str2find = 'https://obdaac-tea.earthdatacloud.nasa.gov/ob-cumulus-prod-public/(.*?)"},'
+    else:
+        provider = 'OB_DAAC'
+        # str2find = 'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},'
     for i, poi in pois.iterrows():
         logger.info('[%i/%i]   Querying %s %s %s %s on CMR    %s    %.5f  %.5f' %
                     (i+1, len(pois), poi['id'], instrument, level, product, poi['dt'], poi['lat'], poi['lon']))
         # get polygon around poi and date
         w, s, e, n, day_st, day_end = format_dtlatlon_query(poi, access_platform)
         # Build Query
-        query = '%s%s&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
-                (URL_CMR, query_string, w, s, e, n, day_st.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        query = '%sprovider=%s&%s&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
+                (URL_CMR, provider, query_string, w, s, e, n, day_st.strftime("%Y-%m-%dT%H:%M:%SZ"),
                  day_end.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        # logger.info(query)
         r = requests.get(query)
         # extract image name from response
-        imlistraw = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
+        if level == 'L2':
+            imlistraw = re.findall(r'https://obdaac-tea.earthdatacloud.nasa.gov/ob-cumulus-prod-public/(.*?)"},', r.text)
+        else:
+            imlistraw = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
         imlistraw = select_day_night_flag(r, imlistraw, dn_flag)
         # run second query for GEO files if VIIRS and L1A
         if 'VIIRS' in instrument and level == 'L1A' or level == 'L1':
-            query = '%s%s&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
-                    (URL_CMR, query_string.replace('_L1', '_L1_GEO'), w, s, e, n, day_st.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            query = '%sprovider=%s&%s&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
+                    (URL_CMR, provider, query_string.replace('_L1', '_L1_GEO'), w, s, e, n, day_st.strftime("%Y-%m-%dT%H:%M:%SZ"),
                      day_end.strftime("%Y-%m-%dT%H:%M:%SZ"))
             r = requests.get(query)
             # extract image name from response
-            imlist_temp = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
+            if level == 'L2':
+                imlist_temp = re.findall(r'https://obdaac-tea.earthdatacloud.nasa.gov/ob-cumulus-prod-public/(.*?)"},', r.text)
+            else:
+                imlist_temp = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
             imlist_temp = select_day_night_flag(r, imlist_temp, dn_flag)
             imlistraw = imlistraw + imlist_temp
         # run second query for NRT files if date_st or date_end more recent than 60 days
         if datetime.utcnow() - day_st < timedelta(days=60) or datetime.utcnow() - day_end < timedelta(days=60):
-            query = '%s%s_NRT&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
-                    (URL_CMR, query_string, w, s, e, n, day_st.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            query = '%sprovider=%s&%s_NRT&bounding_box=%s,%s,%s,%s&temporal=%s,%s&page_size=2000&page_num=1' % \
+                    (URL_CMR, provider, query_string, w, s, e, n, day_st.strftime("%Y-%m-%dT%H:%M:%SZ"),
                      day_end.strftime("%Y-%m-%dT%H:%M:%SZ"))
             r = requests.get(query)
             # extract image name from response
-            imlist_temp = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
+            if level == 'L2':
+                imlist_temp = re.findall(r'https://obdaac-tea.earthdatacloud.nasa.gov/ob-cumulus-prod-public/(.*?)"},', r.text)
+            else:
+                imlist_temp = re.findall(r'https://oceandata.sci.gsfc.nasa.gov/cmr/getfile/(.*?)"},', r.text)
             imlist_temp = select_day_night_flag(r, imlist_temp, dn_flag)
             imlistraw = imlistraw + imlist_temp
         if level == 'L3m' or product == 'L3b':
